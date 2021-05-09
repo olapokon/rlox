@@ -5,8 +5,7 @@ pub struct VM<'a> {
     /// The chunk of bytecode currently being interpreted.
     chunk: &'a Chunk,
     /// The instruction pointer.
-    /// It is the index of the instruction about to be executed,
-    /// in the Chunk's code array.
+    /// It is the index of the instruction about to be executed, in the Chunk's code array.
     ip: usize,
 }
 
@@ -28,28 +27,22 @@ impl<'a> VM<'a> {
 
     fn run(&mut self) -> InterpretResult {
         loop {
-            let instruction = self.read_byte();
+            let instruction = self.read_instruction();
             match instruction {
                 OpCode::OpReturn => return InterpretResult::InterpretOk,
-                OpCode::OpConstant => {
-                    let constant: Value =
+                OpCode::OpConstant(idx) => {
+                    let constant: Value = self.chunk.read_constant(idx);
                 }
-                _ => return InterpretResult::InterpretOk,
+                _ => break,
             }
         }
 
         InterpretResult::InterpretOk
     }
 
-    // fn read_byte(&mut self) -> OpCode {
-    //     let instruction = self.chunk.read_code(self.ip);
-    //     self.ip += 1;
-    //     instruction
-    // }
-
-    // fn read_constant(&mut self) -> Value {
-    //     if let OpCode::OpOperand(constant_index) = self.read_byte() {
-    //         self.chunk.read_constant(constant_index)
-    //     }
-    // }
+    fn read_instruction(&mut self) -> OpCode {
+        let instruction = self.chunk.read_code(self.ip);
+        self.ip += 1;
+        instruction
+    }
 }

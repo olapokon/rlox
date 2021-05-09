@@ -4,9 +4,7 @@ use std::usize;
 /// for instructions that have operands.
 #[derive(Debug, Clone, Copy)]
 pub enum OpCode {
-    OpOperand(usize),
-
-    OpConstant,
+    OpConstant(usize),
     OpReturn,
 }
 
@@ -54,54 +52,27 @@ impl Chunk {
     }
 
     pub fn disassemble(&self, name: &str) {
-        // println!("chunk code: {:?}", self.code);
-        // println!("chunk lines: {:?}", self.lines);
-        // println!("chunk constants: {:?}", self.constants);
         println!("== {} ==", name);
-        // self.code.iter().for_each(|c| println!("{:?}", c));
-        let mut offset: usize = 0;
-        while offset < self.code.len() {
-            offset = self.disassemble_instruction(offset)
-        }
+        self.code
+            .iter()
+            .enumerate()
+            .for_each(|(i, &c)| self.disassemble_instruction(i, c));
     }
 
-    fn disassemble_instruction(&self, offset: usize) -> usize {
-        print!("{:4} ", offset);
-        if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
-            print!("   | ");
+    fn disassemble_instruction(&self, index: usize, instruction: OpCode) {
+        print!("instruction: {:?}\t", index);
+        if index > 0 && self.lines[index] == self.lines[index - 1] {
+            print!("      |\t\t");
         } else {
-            print!("{:4} ", self.lines[offset]);
+            print!("line: {:?}\t\t", self.lines[index]);
         }
 
-        let instruction = &self.code[offset];
         match instruction {
-            OpCode::OpConstant => return self.constant_instruction(instruction, offset),
-            OpCode::OpReturn => return Chunk::simple_instruction(instruction, offset),
-            OpCode::OpOperand(_) => return Chunk::invalid_operand(instruction, offset),
+            OpCode::OpConstant(idx) => {
+                let Value(constant) = self.constants[idx];
+                println!("{:?}\tindex: {:?}\tvalue: {:?}", instruction, idx, constant);
+            }
+            OpCode::OpReturn => println!("{:?}", instruction),
         }
-    }
-
-    fn invalid_operand(instruction: &OpCode, offset: usize) -> usize {
-        println!("Invalid operand {:?}", instruction);
-        offset + 1
-    }
-
-    fn simple_instruction(instruction: &OpCode, offset: usize) -> usize {
-        println!("{:?}", instruction);
-        offset + 1
-    }
-
-    fn constant_instruction(&self, instruction: &OpCode, offset: usize) -> usize {
-        let constant_index = self.code[offset + 1];
-        if let OpCode::OpOperand(constant_index) = constant_index {
-            let Value(constant) = self.constants[constant_index];
-            println!(
-                "{:16?}\tindex: {:?}\tvalue: {:?}",
-                instruction, constant_index, constant
-            );
-        } else {
-            Chunk::invalid_operand(instruction, offset);
-        }
-        offset + 2
     }
 }
