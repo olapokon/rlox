@@ -5,7 +5,7 @@ pub struct Scanner {
     pub line: i32,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,
@@ -57,7 +57,7 @@ pub enum TokenType {
     Eof,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum ScannerError {
     UnexpectedCharacter,
     UnterminatedString,

@@ -1,4 +1,4 @@
-use crate::chunk::{Chunk, OpCode, Value};
+use crate::chunk::{Chunk, Instruction, Value};
 use crate::compiler::*;
 
 const STACK_MAX: usize = 256;
@@ -43,7 +43,7 @@ impl VM {
     }
 
     fn run(&mut self, chunk: Chunk) -> InterpretResult {
-        while self.ip < chunk.code.len() {
+        while self.ip < chunk.bytecode.len() {
             //
             // TODO: conditional compilation
             // if DEBUG_TRACE_EXECUTION
@@ -57,31 +57,31 @@ impl VM {
             //
             let instruction = self.read_instruction(&chunk);
             match instruction {
-                OpCode::OpReturn => {
+                Instruction::OpReturn => {
                     let Value(return_val) = self.pop_from_stack();
                     println!("{:?}", return_val);
                     return InterpretResult::InterpretOk;
                 }
-                OpCode::OpNegate => {
+                Instruction::OpNegate => {
                     let Value(val) = self.pop_from_stack();
                     self.push_to_stack(Value(-val));
                 }
-                OpCode::OpAdd => {
+                Instruction::OpAdd => {
                     let Value(operand_2) = self.pop_from_stack();
                     let Value(operand_1) = self.pop_from_stack();
                     self.push_to_stack(Value(operand_1 + operand_2));
                 }
-                OpCode::OpSubtract => {
+                Instruction::OpSubtract => {
                     let Value(operand_2) = self.pop_from_stack();
                     let Value(operand_1) = self.pop_from_stack();
                     self.push_to_stack(Value(operand_1 - operand_2));
                 }
-                OpCode::OpMultiply => {
+                Instruction::OpMultiply => {
                     let Value(operand_2) = self.pop_from_stack();
                     let Value(operand_1) = self.pop_from_stack();
                     self.push_to_stack(Value(operand_1 * operand_2));
                 }
-                OpCode::OpDivide => {
+                Instruction::OpDivide => {
                     let Value(operand_2) = self.pop_from_stack();
                     let Value(operand_1) = self.pop_from_stack();
                     self.push_to_stack(Value(operand_1 / operand_2));
@@ -95,7 +95,7 @@ impl VM {
                 //     let Value(operand_2) = self.pop_from_stack();
                 //     self.push_to_stack(Value(operand_1 + operand_2));
                 // }
-                OpCode::OpConstant(idx) => {
+                Instruction::OpConstant(idx) => {
                     let constant: Value = chunk.read_constant(idx);
                     self.push_to_stack(constant);
                 }
@@ -116,7 +116,7 @@ impl VM {
         self.stack[self.stack_top]
     }
 
-    fn read_instruction(&mut self, chunk: &Chunk) -> OpCode {
+    fn read_instruction(&mut self, chunk: &Chunk) -> Instruction {
         let instruction = chunk.read_code(self.ip);
         self.ip += 1;
         instruction

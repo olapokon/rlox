@@ -4,6 +4,8 @@ use super::scanner::{ScannerError, Token, TokenType};
 pub struct Parser {
     pub current: Token,
     pub previous: Token,
+    pub had_error: bool,
+    pub panic_mode: bool,
 }
 
 impl Parser {
@@ -17,6 +19,8 @@ impl Parser {
         Parser {
             current: placeholder_token,
             previous: placeholder_token,
+            had_error: false,
+            panic_mode: false,
         }
     }
 }

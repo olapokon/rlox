@@ -1,6 +1,6 @@
 /// The set of the VM's instruction codes.
 #[derive(Debug, Clone, Copy)]
-pub enum OpCode {
+pub enum Instruction {
     OpConstant(usize),
     OpAdd,
     OpSubtract,
@@ -16,7 +16,7 @@ pub struct Value(pub f64);
 /// A chunk of bytecode.
 pub struct Chunk {
     /// Holds the Chunk's bytecode.
-    pub code: Vec<OpCode>,
+    pub bytecode: Vec<Instruction>,
     /// Holds the Chunk's constant values.
     constants: Vec<Value>,
     /// Exactly parallels the bytecode array.
@@ -27,20 +27,20 @@ pub struct Chunk {
 impl Chunk {
     pub fn init() -> Chunk {
         Chunk {
-            code: Vec::new(),
+            bytecode: Vec::new(),
             constants: Vec::new(),
             lines: Vec::new(),
         }
     }
 
     /// Adds an [OpCode] to the [Chunk]'s code array.
-    pub fn write(&mut self, code: OpCode, line: i32) {
-        self.code.push(code);
+    pub fn write(&mut self, instruction: Instruction, line: i32) {
+        self.bytecode.push(instruction);
         self.lines.push(line);
     }
 
-    pub fn read_code(&self, index: usize) -> OpCode {
-        self.code[index]
+    pub fn read_code(&self, index: usize) -> Instruction {
+        self.bytecode[index]
     }
 
     pub fn read_constant(&self, index: usize) -> Value {
@@ -55,7 +55,7 @@ impl Chunk {
 
     pub fn disassemble(&self, name: &str) {
         println!("== {} ==", name);
-        self.code
+        self.bytecode
             .iter()
             .enumerate()
             .for_each(|(i, _)| self.disassemble_instruction(i));
@@ -71,18 +71,18 @@ impl Chunk {
             print!("line: {:?}\t\t", self.lines[index]);
         }
 
-        let instruction = self.code[index];
+        let instruction = self.bytecode[index];
         match instruction {
-            OpCode::OpConstant(idx) => {
+            Instruction::OpConstant(idx) => {
                 let Value(constant) = self.constants[idx];
                 println!("{:?}\tindex: {:?}\tvalue: {:?}", instruction, idx, constant);
             }
-            OpCode::OpNegate
-            | OpCode::OpAdd
-            | OpCode::OpSubtract
-            | OpCode::OpMultiply
-            | OpCode::OpDivide
-            | OpCode::OpReturn => println!("{:?}", instruction),
+            Instruction::OpNegate
+            | Instruction::OpAdd
+            | Instruction::OpSubtract
+            | Instruction::OpMultiply
+            | Instruction::OpDivide
+            | Instruction::OpReturn => println!("{:?}", instruction),
         }
     }
 }
