@@ -1,11 +1,10 @@
 use crate::chunk::{Chunk, OpCode, Value};
+use crate::compiler::*;
 
 const STACK_MAX: usize = 256;
 
 /// A virtual machine that interprets chunks of bytecode.
-pub struct VM<'a> {
-    /// The chunk of bytecode currently being interpreted.
-    chunk: &'a Chunk,
+pub struct VM {
     /// The instruction pointer.
     /// It is the index of the instruction about to be executed, in the Chunk's code array.
     ip: usize,
@@ -20,10 +19,19 @@ pub enum InterpretResult {
     InterpretRuntimeError,
 }
 
-impl<'a> VM<'a> {
-    pub fn init(chunk: &'a Chunk) -> VM {
+impl VM {
+    pub fn interpret(source: String) -> InterpretResult {
+        let r = match Compiler::compile() {
+            Ok(r) => r,
+            Err(_) => return InterpretResult::InterpretCompileError,
+        };
+
+        let mut vm = VM::init();
+        vm.run(r)
+    }
+
+    fn init() -> VM {
         VM {
-            chunk,
             ip: 0,
             stack: [Value(0.0); STACK_MAX],
             stack_top: 0,
@@ -34,13 +42,8 @@ impl<'a> VM<'a> {
         self.stack_top = 0;
     }
 
-    pub fn interpret(&mut self, source: String) -> InterpretResult {
-        self.ip = 0;
-        self.run()
-    }
-
-    fn run(&mut self) -> InterpretResult {
-        while self.ip < self.chunk.code.len() {
+    fn run(&mut self, chunk: Chunk) -> InterpretResult {
+        while self.ip < chunk.code.len() {
             //
             // TODO: conditional compilation
             // if DEBUG_TRACE_EXECUTION
@@ -48,11 +51,11 @@ impl<'a> VM<'a> {
                 print!("[{:?}]", self.stack[i]);
             }
             println!();
-            self.chunk.disassemble_instruction(self.ip);
+            chunk.disassemble_instruction(self.ip);
             // endif
             //
             //
-            let instruction = self.read_instruction();
+            let instruction = self.read_instruction(&chunk);
             match instruction {
                 OpCode::OpReturn => {
                     let Value(return_val) = self.pop_from_stack();
@@ -93,7 +96,7 @@ impl<'a> VM<'a> {
                 //     self.push_to_stack(Value(operand_1 + operand_2));
                 // }
                 OpCode::OpConstant(idx) => {
-                    let constant: Value = self.chunk.read_constant(idx);
+                    let constant: Value = chunk.read_constant(idx);
                     self.push_to_stack(constant);
                 }
             }
@@ -113,8 +116,8 @@ impl<'a> VM<'a> {
         self.stack[self.stack_top]
     }
 
-    fn read_instruction(&mut self) -> OpCode {
-        let instruction = self.chunk.read_code(self.ip);
+    fn read_instruction(&mut self, chunk: &Chunk) -> OpCode {
+        let instruction = chunk.read_code(self.ip);
         self.ip += 1;
         instruction
     }

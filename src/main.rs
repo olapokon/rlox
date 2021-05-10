@@ -1,9 +1,9 @@
 mod chunk;
+mod compiler;
 mod vm;
+mod scanner;
 
 use std::io::Write;
-
-use chunk::*;
 use vm::*;
 
 fn main() {
@@ -46,11 +46,10 @@ fn run_file(path: String) {
         Err(_) => {
             eprintln!("Could not read file \"{:?}\".", &path);
             std::process::exit(74);
-        },
+        }
     };
 
-    let result: InterpretResult = InterpretResult::InterpretOk;
-    // let result = interpret(source);
+    let result = VM::interpret(source);
 
     match result {
         InterpretResult::InterpretCompileError => std::process::exit(65),
