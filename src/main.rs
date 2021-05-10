@@ -1,30 +1,60 @@
 mod chunk;
 mod vm;
 
+use std::io::Write;
+
 use chunk::*;
 use vm::*;
 
 fn main() {
-    let mut chunk = Chunk::init();
+    let args_count = std::env::args().count();
+    match args_count {
+        1 => repl(),
+        2 => run_file(std::env::args().nth(1).unwrap()),
+        _ => {
+            eprintln!("Usage: clox [path]");
+            std::process::exit(64);
+        }
+    }
 
-    let constant = chunk.add_constant(Value(5.6));
-    chunk.write(OpCode::OpConstant(constant), 1);
+    // let mut chunk = Chunk::init();
+    // chunk.disassemble("test chunk");
+    // let mut vm = VM::init(&chunk);
+    // vm.interpret();
+}
 
-    let constant = chunk.add_constant(Value(4.4));
-    chunk.write(OpCode::OpConstant(constant), 1);
+fn repl() {
+    let mut user_input = String::new();
+    loop {
+        print!("> ");
+        std::io::stdout()
+            .flush()
+            .expect("Failed to write to stdout");
+        std::io::stdin()
+            .read_line(&mut user_input)
+            .expect("Failed to read input");
 
-    chunk.write(OpCode::OpAdd, 1);
+        println!("{:?}", user_input.trim());
+        // interpret(user_input);
+        user_input.clear();
+    }
+}
 
-    let constant = chunk.add_constant(Value(5.0));
-    chunk.write(OpCode::OpConstant(constant), 1);
+fn run_file(path: String) {
+    let source = match std::fs::read_to_string(&path) {
+        Ok(source) => source,
+        Err(_) => {
+            eprintln!("Could not read file \"{:?}\".", &path);
+            std::process::exit(74);
+        },
+    };
 
-    chunk.write(OpCode::OpDivide, 1);
+    let result: InterpretResult = InterpretResult::InterpretOk;
+    // let result = interpret(source);
 
-    // chunk.write(OpCode::OpNegate, 2);
-    chunk.write(OpCode::OpReturn, 9);
-
-    chunk.disassemble("test chunk");
-
-    let mut vm = VM::init(&chunk);
-    vm.interpret();
+    match result {
+        InterpretResult::InterpretCompileError => std::process::exit(65),
+        InterpretResult::InterpretRuntimeError => std::process::exit(70),
+        _ => {}
+    }
 }

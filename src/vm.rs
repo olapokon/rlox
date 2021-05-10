@@ -1,5 +1,3 @@
-use std::collections::btree_map::Range;
-
 use crate::chunk::{Chunk, OpCode, Value};
 
 const STACK_MAX: usize = 256;
@@ -36,7 +34,7 @@ impl<'a> VM<'a> {
         self.stack_top = 0;
     }
 
-    pub fn interpret(&mut self) -> InterpretResult {
+    pub fn interpret(&mut self, source: String) -> InterpretResult {
         self.ip = 0;
         self.run()
     }
