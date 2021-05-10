@@ -1,10 +1,12 @@
-use std::usize;
-
-/// The set of the VM's instruction codes, along with an OpOperand(u8)
-/// for instructions that have operands.
+/// The set of the VM's instruction codes.
 #[derive(Debug, Clone, Copy)]
 pub enum OpCode {
     OpConstant(usize),
+    OpAdd,
+    OpSubtract,
+    OpMultiply,
+    OpDivide,
+    OpNegate,
     OpReturn,
 }
 
@@ -14,7 +16,7 @@ pub struct Value(pub f64);
 /// A chunk of bytecode.
 pub struct Chunk {
     /// Holds the Chunk's bytecode.
-    code: Vec<OpCode>,
+    pub code: Vec<OpCode>,
     /// Holds the Chunk's constant values.
     constants: Vec<Value>,
     /// Exactly parallels the bytecode array.
@@ -56,23 +58,31 @@ impl Chunk {
         self.code
             .iter()
             .enumerate()
-            .for_each(|(i, &c)| self.disassemble_instruction(i, c));
+            .for_each(|(i, _)| self.disassemble_instruction(i));
+        println!("== /{} ==\n", name);
     }
 
-    fn disassemble_instruction(&self, index: usize, instruction: OpCode) {
-        print!("instruction: {:?}\t", index);
+    pub fn disassemble_instruction(&self, index: usize) {
+        // print!("instruction: {:?}\t", index);
+        print!("{:?} ", index);
         if index > 0 && self.lines[index] == self.lines[index - 1] {
             print!("      |\t\t");
         } else {
             print!("line: {:?}\t\t", self.lines[index]);
         }
 
+        let instruction = self.code[index];
         match instruction {
             OpCode::OpConstant(idx) => {
                 let Value(constant) = self.constants[idx];
                 println!("{:?}\tindex: {:?}\tvalue: {:?}", instruction, idx, constant);
             }
-            OpCode::OpReturn => println!("{:?}", instruction),
+            OpCode::OpNegate
+            | OpCode::OpAdd
+            | OpCode::OpSubtract
+            | OpCode::OpMultiply
+            | OpCode::OpDivide
+            | OpCode::OpReturn => println!("{:?}", instruction),
         }
     }
 }
