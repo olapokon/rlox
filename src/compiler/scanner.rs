@@ -1,11 +1,12 @@
 pub struct Scanner {
-    source: Vec<char>,
-    start: usize,
-    current: usize,
-    line: i32,
+    pub source: Vec<char>,
+    pub start: usize,
+    pub current: usize,
+    pub line: i32,
 }
 
-enum TokenType {
+#[derive(Clone, Copy)]
+pub enum TokenType {
     // Single-character tokens.
     LeftParen,
     RightParen,
@@ -49,20 +50,27 @@ enum TokenType {
     Var,
     While,
 
-    // Errors.
-    UnexpectedCharacterError,
-    UnterminatedStringError,
+    // Error.
+    Error(ScannerError),
 
     // End of file.
     Eof,
 }
 
-struct Token {
-    token_type: TokenType,
-    /// The token's index in the source string.
-    start: usize,
-    length: i32,
-    line: i32,
+#[derive(Clone, Copy)]
+pub enum ScannerError {
+    UnexpectedCharacter,
+    UnterminatedString,
+    UninitializedToken,
+}
+
+#[derive(Clone, Copy)]
+pub struct Token {
+    pub token_type: TokenType,
+    /// The token's start index in the source string.
+    pub start: usize,
+    pub length: i32,
+    pub line: i32,
 }
 
 impl Scanner {
@@ -128,7 +136,7 @@ impl Scanner {
             c if is_digit(c) => self.number(),
             c if is_alpha(c) => self.identifier(),
 
-            _ => self.make_token(TokenType::UnexpectedCharacterError),
+            _ => self.make_token(TokenType::Error(ScannerError::UnexpectedCharacter)),
         };
     }
 
@@ -206,7 +214,7 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            return self.make_token(TokenType::UnterminatedStringError);
+            return self.make_token(TokenType::Error(ScannerError::UnterminatedString));
         }
 
         self.advance(); // closing quote

@@ -21,7 +21,7 @@ pub enum InterpretResult {
 
 impl VM {
     pub fn interpret(source: String) -> InterpretResult {
-        let r = match Compiler::compile() {
+        let r = match Compiler::compile(source) {
             Ok(r) => r,
             Err(_) => return InterpretResult::InterpretCompileError,
         };

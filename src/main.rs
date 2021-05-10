@@ -1,7 +1,6 @@
 mod chunk;
 mod compiler;
 mod vm;
-mod scanner;
 
 use std::io::Write;
 use vm::*;
