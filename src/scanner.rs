@@ -51,6 +51,7 @@ enum TokenType {
 
     // Errors.
     UnexpectedCharacterError,
+    UnterminatedStringError,
 
     // End of file.
     Eof,
@@ -123,6 +124,9 @@ impl Scanner {
                     self.make_token(TokenType::Greater)
                 }
             }
+            '"' => self.string(),
+            c if is_digit(c) => self.number(),
+            c if is_alpha(c) => self.identifier(),
 
             _ => self.make_token(TokenType::UnexpectedCharacterError),
         };
@@ -146,6 +150,14 @@ impl Scanner {
         self.source[self.current]
     }
 
+    fn peek_next(&self) -> char {
+        return if self.is_at_end() {
+            '\0'
+        } else {
+            self.source[self.current + 1]
+        };
+    }
+
     fn match_char(&mut self, expected: char) -> bool {
         if self.is_at_end() {
             return false;
@@ -167,6 +179,15 @@ impl Scanner {
                     self.line += 1;
                     self.advance();
                 }
+                '/' => {
+                    if self.peek_next() == '/' {
+                        while self.peek() != '\n' && !self.is_at_end() {
+                            self.advance();
+                        }
+                    } else {
+                        return;
+                    }
+                }
                 _ => return,
             }
         }
@@ -175,4 +196,103 @@ impl Scanner {
     fn is_at_end(&self) -> bool {
         self.source.len() == self.current
     }
+
+    fn string(&mut self) -> Token {
+        while self.peek() != '"' && !self.is_at_end() {
+            if self.peek() == '\n' {
+                self.line += 1
+            };
+            self.advance();
+        }
+
+        if self.is_at_end() {
+            return self.make_token(TokenType::UnterminatedStringError);
+        }
+
+        self.advance(); // closing quote
+
+        self.make_token(TokenType::String)
+    }
+
+    fn number(&mut self) -> Token {
+        while is_digit(self.peek()) {
+            self.advance();
+        }
+
+        if self.peek() == '.' && is_digit(self.peek_next()) {
+            self.advance();
+
+            while is_digit(self.peek()) {
+                self.advance();
+            }
+        }
+
+        self.make_token(TokenType::Number)
+    }
+
+    fn identifier(&mut self) -> Token {
+        while is_alpha(self.peek()) || is_digit(self.peek()) {
+            self.advance();
+        }
+
+        self.make_token(self.identifier_type())
+    }
+
+    fn identifier_type(&self) -> TokenType {
+        return match self.source[self.start] {
+            'a' => self.check_keyword(1, 2, "nd", TokenType::And),
+            'c' => self.check_keyword(1, 4, "lass", TokenType::Class),
+            'e' => self.check_keyword(1, 3, "lse", TokenType::Else),
+            'i' => self.check_keyword(1, 1, "f", TokenType::If),
+            'n' => self.check_keyword(1, 2, "il", TokenType::Nil),
+            'o' => self.check_keyword(1, 1, "r", TokenType::Or),
+            'p' => self.check_keyword(1, 4, "rint", TokenType::Print),
+            'r' => self.check_keyword(1, 5, "eturn", TokenType::Return),
+            's' => self.check_keyword(1, 4, "uper", TokenType::Super),
+            'v' => self.check_keyword(1, 2, "ar", TokenType::Var),
+            'w' => self.check_keyword(1, 4, "hile", TokenType::While),
+            'f' if self.current - self.start > 1usize => match self.source[self.start + 1] {
+                'a' => self.check_keyword(2, 3, "lse", TokenType::False),
+                'o' => self.check_keyword(2, 1, "r", TokenType::For),
+                'u' => self.check_keyword(2, 1, "n", TokenType::Fun),
+                _ => TokenType::Identifier,
+            },
+            't' if self.current - self.start > 1usize => match self.source[self.start + 1] {
+                'h' => self.check_keyword(2, 2, "is", TokenType::This),
+                'r' => self.check_keyword(2, 2, "ue", TokenType::True),
+                _ => TokenType::Identifier,
+            },
+            _ => TokenType::Identifier,
+        };
+    }
+
+    fn check_keyword(
+        &self,
+        start: i32,
+        length: i32,
+        rest: &str,
+        token_type: TokenType,
+    ) -> TokenType {
+        if (self.current - self.start) as i32 != start + length {
+            return TokenType::Identifier;
+        }
+        for (&c1, c2) in self.source[self.start + 1..self.current]
+            .iter()
+            .zip(rest.chars())
+        {
+            if c1 != c2 {
+                return TokenType::Identifier;
+            }
+        }
+
+        token_type
+    }
+}
+
+fn is_digit(c: char) -> bool {
+    c >= '0' && c <= '9'
+}
+
+fn is_alpha(c: char) -> bool {
+    (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
 }
