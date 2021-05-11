@@ -34,7 +34,8 @@ fn repl() {
             .expect("Failed to read input");
 
         println!("{:?}", user_input.trim());
-        // interpret(user_input);
+        let input = user_input.clone();
+        VM::interpret(input);
         user_input.clear();
     }
 }

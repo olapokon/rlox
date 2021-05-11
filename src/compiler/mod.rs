@@ -1,11 +1,52 @@
 mod parser;
 mod scanner;
-use crate::chunk::{Chunk, Instruction};
+use core::f64;
+
+use crate::chunk::{Chunk, Instruction, Value};
 
 use self::{
     parser::Parser,
     scanner::{Scanner, Token, TokenType},
 };
+
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
+enum Precedence {
+    None,
+    Assignment,
+    Or,
+    And,
+    Equality,
+    Comparison,
+    Term,
+    Factor,
+    Unary,
+    Call,
+    Primary,
+}
+
+#[derive(PartialEq)]
+enum ParseFn {
+    // Call,
+    Grouping,
+    // Dot,
+    Unary,
+    Binary,
+    // Variable,
+    // String,
+    Number,
+    // And,
+    // Literal,
+    // Or,
+    // Super,
+    // This,
+    None,
+}
+
+struct ParseRule {
+    prefix: ParseFn,
+    infix: ParseFn,
+    precedence: Precedence,
+}
 
 pub struct Compiler {
     current_chunk: Chunk,
@@ -52,6 +93,10 @@ impl Compiler {
         }
     }
 
+    fn error(&mut self, message: &str) {
+        self.error_at(self.parser.previous, message);
+    }
+
     fn error_at(&mut self, token: Token, message: &str) {
         if self.parser.panic_mode {
             return;
@@ -86,12 +131,316 @@ impl Compiler {
             .write(instruction, self.parser.previous.line);
     }
 
-    fn emit_instructions(&mut self, instruction_1: Instruction, instruction_2: Instruction) {
-        self.emit_instruction(instruction_1);
-        self.emit_instruction(instruction_2);
+    fn emit_constant(&mut self, value: Value) {
+        let constant_index = self.make_constant(value);
+        self.emit_instruction(Instruction::OpConstant(constant_index));
+    }
+
+    // Adds a constant to the Chunk's constants array and returns the index.
+    fn make_constant(&mut self, value: Value) -> usize {
+        let constant_index = self.current_chunk.add_constant(value);
+        if constant_index as u8 > u8::MAX {
+            self.error("Too many constants in one chunk.");
+            return 0;
+        }
+        constant_index
     }
 
     fn end(&mut self) {
         self.emit_instruction(Instruction::OpReturn);
+
+        //
+        //
+        // TODO: conditional compilation
+        if !self.parser.had_error {
+            self.current_chunk.disassemble("code");
+        }
+        //
+        //
+        //
+    }
+
+    fn parse_precedence(&mut self, precedence: Precedence) {
+        self.advance();
+        let prefix_rule = Compiler::rules(self.parser.previous.token_type);
+        if prefix_rule.prefix == ParseFn::None {
+            self.error("Expect expression.");
+            return;
+        }
+
+        self.parse_fn(prefix_rule.prefix);
+
+        while precedence <= Compiler::rules(self.parser.current.token_type).precedence {
+            self.advance();
+            let infix_rule = Compiler::rules(self.parser.previous.token_type);
+            self.parse_fn(infix_rule.infix);
+        }
+    }
+
+    fn expression(&mut self) {
+        self.parse_precedence(Precedence::Assignment);
+    }
+
+    fn number(&mut self) {
+        // TODO: lexeme handling?
+        let value = self.scanner.source
+            [self.parser.previous.start..self.parser.previous.length as usize]
+            .iter()
+            .collect::<String>()
+            .parse::<f64>()
+            .unwrap();
+        self.emit_constant(Value(value));
+    }
+
+    fn grouping(&mut self) {
+        self.expression();
+        self.consume(TokenType::RightParen, "Expect ')' after expression.");
+    }
+
+    fn unary(&mut self) {
+        let operator_type = self.parser.previous.token_type;
+
+        self.parse_precedence(Precedence::Unary);
+
+        match operator_type {
+            TokenType::Minus => self.emit_instruction(Instruction::OpNegate),
+            _ => {}
+        }
+    }
+
+    fn binary(&mut self) {
+        let operator_type = self.parser.previous.token_type;
+
+        let rule: ParseRule = Compiler::rules(operator_type);
+        self.parse_precedence(rule.precedence);
+
+        match operator_type {
+            _ => return,
+        }
+    }
+
+    fn parse_fn(&mut self, parse_fn: ParseFn) {
+        match parse_fn {
+            // ParseFn::Call => ,
+            ParseFn::Grouping => self.grouping(),
+            // ParseFn::Dot => ,
+            ParseFn::Unary => self.unary(),
+            ParseFn::Binary => self.binary(),
+            // ParseFn::Variable => ,
+            // ParseFn::String => ,
+            ParseFn::Number => self.number(),
+            // ParseFn::And => ,
+            // ParseFn::Literal => ,
+            // ParseFn::Or => ,
+            // ParseFn::Super => ,
+            // ParseFn::This => ,
+            // ParseFn::None => ,
+            ParseFn::None => (),
+        }
+    }
+
+    fn rules(token_type: TokenType) -> ParseRule {
+        return match token_type {
+            TokenType::LeftParen => ParseRule {
+                prefix: ParseFn::Grouping,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::RightParen => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::LeftBrace => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::RightBrace => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Comma => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Dot => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Minus => ParseRule {
+                prefix: ParseFn::Unary,
+                infix: ParseFn::Binary,
+                precedence: Precedence::Term,
+            },
+            TokenType::Plus => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::Binary,
+                precedence: Precedence::Term,
+            },
+            TokenType::Semicolon => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Slash => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::Binary,
+                precedence: Precedence::Factor,
+            },
+            TokenType::Star => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::Binary,
+                precedence: Precedence::Factor,
+            },
+            TokenType::Bang => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::BangEqual => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Equal => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::EqualEqual => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Greater => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::GreaterEqual => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Less => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::LessEqual => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Identifier => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::String => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Number => ParseRule {
+                prefix: ParseFn::Number,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::And => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Class => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Else => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::False => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::For => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Fun => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::If => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Nil => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Or => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Print => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Return => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Super => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::This => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::True => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Var => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::While => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Error(_) => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+            TokenType::Eof => ParseRule {
+                prefix: ParseFn::None,
+                infix: ParseFn::None,
+                precedence: Precedence::None,
+            },
+        };
     }
 }
