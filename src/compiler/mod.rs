@@ -80,7 +80,7 @@ impl Compiler {
     }
 
     fn lexeme_to_string(&self, token: Token) -> String {
-        self.scanner.source[token.start..(token.start + token.length as usize)as usize]
+        self.scanner.source[token.start..(token.start + token.length as usize)]
             .iter()
             .collect()
     }
@@ -166,7 +166,9 @@ impl Compiler {
         //
     }
 
-    fn parse_precedence(&mut self, precedence: Precedence) {
+    // Takes Precedence converted to i32.
+    // TODO: refactor Precedence?
+    fn parse_precedence(&mut self, precedence: i32) {
         self.advance();
         let prefix_rule = Compiler::rules(self.parser.previous.token_type);
         if prefix_rule.prefix == ParseFn::None {
@@ -176,7 +178,7 @@ impl Compiler {
 
         self.parse_fn(prefix_rule.prefix);
 
-        while precedence <= Compiler::rules(self.parser.current.token_type).precedence {
+        while precedence <= Compiler::rules(self.parser.current.token_type).precedence as i32 {
             self.advance();
             let infix_rule = Compiler::rules(self.parser.previous.token_type);
             self.parse_fn(infix_rule.infix);
@@ -184,7 +186,7 @@ impl Compiler {
     }
 
     fn expression(&mut self) {
-        self.parse_precedence(Precedence::Assignment);
+        self.parse_precedence(Precedence::Assignment as i32);
     }
 
     fn number(&mut self) {
@@ -204,7 +206,7 @@ impl Compiler {
     fn unary(&mut self) {
         let operator_type = self.parser.previous.token_type;
 
-        self.parse_precedence(Precedence::Unary);
+        self.parse_precedence(Precedence::Unary as i32);
 
         match operator_type {
             TokenType::Minus => self.emit_instruction(Instruction::OpNegate),
@@ -214,9 +216,9 @@ impl Compiler {
 
     fn binary(&mut self) {
         let operator_type = self.parser.previous.token_type;
-
         let rule: ParseRule = Compiler::rules(operator_type);
-        self.parse_precedence(rule.precedence);
+        let precedence = rule.precedence as i32 + 1;
+        self.parse_precedence(precedence);
 
         match operator_type {
             TokenType::Plus => self.emit_instruction(Instruction::OpAdd),
