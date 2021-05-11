@@ -2,7 +2,7 @@ mod parser;
 mod scanner;
 use core::f64;
 
-use crate::chunk::{Chunk, Instruction, Value};
+use crate::{chunk::{Chunk, Instruction}, value::Value};
 
 use self::{
     parser::Parser,
@@ -166,7 +166,7 @@ impl Compiler {
         //
     }
 
-    // Takes Precedence converted to i32.
+    /// Takes [Precedence] converted to i32.
     // TODO: refactor Precedence?
     fn parse_precedence(&mut self, precedence: i32) {
         self.advance();
@@ -195,7 +195,7 @@ impl Compiler {
             .lexeme_to_string(self.parser.previous)
             .parse::<f64>()
             .unwrap();
-        self.emit_constant(Value(value));
+        self.emit_constant(Value::Number(value));
     }
 
     fn grouping(&mut self) {

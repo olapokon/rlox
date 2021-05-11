@@ -1,3 +1,5 @@
+use crate::value::Value;
+
 /// The set of the VM's instruction codes.
 #[derive(Debug, Clone, Copy)]
 pub enum Instruction {
@@ -9,9 +11,6 @@ pub enum Instruction {
     OpNegate,
     OpReturn,
 }
-
-#[derive(Debug, Clone, Copy)]
-pub struct Value(pub f64);
 
 /// A chunk of bytecode.
 pub struct Chunk {
@@ -74,7 +73,7 @@ impl Chunk {
         let instruction = self.bytecode[index];
         match instruction {
             Instruction::OpConstant(idx) => {
-                let Value(constant) = self.constants[idx];
+                let constant = self.constants[idx];
                 println!("{:?}\tindex: {:?}\tvalue: {:?}", instruction, idx, constant);
             }
             Instruction::OpNegate

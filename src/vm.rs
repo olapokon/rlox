@@ -1,5 +1,8 @@
-use crate::chunk::{Chunk, Instruction, Value};
 use crate::compiler::*;
+use crate::{
+    chunk::{Chunk, Instruction},
+    value::Value,
+};
 
 const STACK_MAX: usize = 256;
 
@@ -33,7 +36,7 @@ impl VM {
     fn init() -> VM {
         VM {
             ip: 0,
-            stack: [Value(0.0); STACK_MAX],
+            stack: [Value::Number(0.0); STACK_MAX],
             stack_top: 0,
         }
     }
@@ -58,43 +61,64 @@ impl VM {
             let instruction = self.read_instruction(&chunk);
             match instruction {
                 Instruction::OpReturn => {
-                    let Value(return_val) = self.pop_from_stack();
+                    let return_val = self.pop_from_stack();
                     println!("{:?}", return_val);
                     return InterpretResult::InterpretOk;
                 }
-                Instruction::OpNegate => {
-                    let Value(val) = self.pop_from_stack();
-                    self.push_to_stack(Value(-val));
-                }
-                Instruction::OpAdd => {
-                    let Value(operand_2) = self.pop_from_stack();
-                    let Value(operand_1) = self.pop_from_stack();
-                    self.push_to_stack(Value(operand_1 + operand_2));
-                }
-                Instruction::OpSubtract => {
-                    let Value(operand_2) = self.pop_from_stack();
-                    let Value(operand_1) = self.pop_from_stack();
-                    self.push_to_stack(Value(operand_1 - operand_2));
-                }
-                Instruction::OpMultiply => {
-                    let Value(operand_2) = self.pop_from_stack();
-                    let Value(operand_1) = self.pop_from_stack();
-                    self.push_to_stack(Value(operand_1 * operand_2));
-                }
-                Instruction::OpDivide => {
-                    let Value(operand_2) = self.pop_from_stack();
-                    let Value(operand_1) = self.pop_from_stack();
-                    self.push_to_stack(Value(operand_1 / operand_2));
-                }
-
-                // OpCode::OpAdd
-                // | OpCode::OpSubtract
-                // | OpCode::OpMultiply
-                // | OpCode::OpDivide => {
-                //     let Value(operand_1) = self.pop_from_stack();
-                //     let Value(operand_2) = self.pop_from_stack();
-                //     self.push_to_stack(Value(operand_1 + operand_2));
+                Instruction::OpNegate => match self.pop_from_stack() {
+                    Value::Number(val) => self.push_to_stack(Value::Number(-val)),
+                    _ => return InterpretResult::InterpretRuntimeError,
+                },
+                // Instruction::OpAdd => {
+                //     let Value::Number(operand_2) = self.pop_from_stack();
+                //     let Value::Number(operand_1) = self.pop_from_stack();
+                //     self.push_to_stack(Value::Number(operand_1 + operand_2));
                 // }
+                // Instruction::OpSubtract => {
+                //     let Value::Number(operand_2) = self.pop_from_stack();
+                //     let Value::Number(operand_1) = self.pop_from_stack();
+                //     self.push_to_stack(Value::Number(operand_1 - operand_2));
+                // }
+                // Instruction::OpMultiply => {
+                //     let Value::Number(operand_2) = self.pop_from_stack();
+                //     let Value::Number(operand_1) = self.pop_from_stack();
+                //     self.push_to_stack(Value::Number(operand_1 * operand_2));
+                // }
+                // Instruction::OpDivide => {
+                //     let Value::Number(operand_2) = self.pop_from_stack();
+                //     let Value::Number(operand_1) = self.pop_from_stack();
+                //     self.push_to_stack(Value::Number(operand_1 / operand_2));
+                // }
+                Instruction::OpAdd
+                | Instruction::OpSubtract
+                | Instruction::OpMultiply
+                | Instruction::OpDivide => {
+                    let operand_2 = if let Value::Number(operand_2) = self.pop_from_stack() {
+                        operand_2
+                    } else {
+                        return InterpretResult::InterpretRuntimeError;
+                    };
+                    let operand_1 = if let Value::Number(operand_1) = self.pop_from_stack() {
+                        operand_1
+                    } else {
+                        return InterpretResult::InterpretRuntimeError;
+                    };
+                    match instruction {
+                        Instruction::OpAdd => {
+                            self.push_to_stack(Value::Number(operand_1 + operand_2))
+                        }
+                        Instruction::OpSubtract => {
+                            self.push_to_stack(Value::Number(operand_1 - operand_2))
+                        }
+                        Instruction::OpMultiply => {
+                            self.push_to_stack(Value::Number(operand_1 * operand_2))
+                        }
+                        Instruction::OpDivide => {
+                            self.push_to_stack(Value::Number(operand_1 / operand_2))
+                        }
+                        _ => return InterpretResult::InterpretRuntimeError,
+                    }
+                }
                 Instruction::OpConstant(idx) => {
                     let constant: Value = chunk.read_constant(idx);
                     self.push_to_stack(constant);
