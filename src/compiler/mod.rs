@@ -2,7 +2,10 @@ mod parser;
 mod scanner;
 use core::f64;
 
-use crate::{chunk::{Chunk, Instruction}, value::Value};
+use crate::{
+    chunk::{Chunk, Instruction},
+    value::Value,
+};
 
 use self::{
     parser::Parser,
@@ -35,7 +38,7 @@ enum ParseFn {
     // String,
     Number,
     // And,
-    // Literal,
+    Literal,
     // Or,
     // Super,
     // This,
@@ -137,6 +140,11 @@ impl Compiler {
             .write(instruction, self.parser.previous.line);
     }
 
+    fn emit_instructions(&mut self, i_1: Instruction, i_2: Instruction) {
+        self.emit_instruction(i_1);
+        self.emit_instruction(i_2);
+    }
+
     fn emit_constant(&mut self, value: Value) {
         let constant_index = self.make_constant(value);
         self.emit_instruction(Instruction::OpConstant(constant_index));
@@ -209,6 +217,7 @@ impl Compiler {
         self.parse_precedence(Precedence::Unary as i32);
 
         match operator_type {
+            TokenType::Bang => self.emit_instruction(Instruction::OpNot),
             TokenType::Minus => self.emit_instruction(Instruction::OpNegate),
             _ => {}
         }
@@ -221,10 +230,33 @@ impl Compiler {
         self.parse_precedence(precedence);
 
         match operator_type {
+            TokenType::BangEqual => {
+                self.emit_instructions(Instruction::OpEqual, Instruction::OpNot)
+            }
+            TokenType::EqualEqual => self.emit_instruction(Instruction::OpEqual),
+            TokenType::Greater => self.emit_instruction(Instruction::OpGreater),
+            TokenType::GreaterEqual => {
+                self.emit_instructions(Instruction::OpLess, Instruction::OpNot)
+            }
+            TokenType::Less => self.emit_instruction(Instruction::OpLess),
+            TokenType::LessEqual => {
+                self.emit_instructions(Instruction::OpGreater, Instruction::OpNot)
+            }
             TokenType::Plus => self.emit_instruction(Instruction::OpAdd),
             TokenType::Minus => self.emit_instruction(Instruction::OpSubtract),
             TokenType::Star => self.emit_instruction(Instruction::OpMultiply),
             TokenType::Slash => self.emit_instruction(Instruction::OpDivide),
+            _ => return,
+        }
+    }
+
+    fn literal(&mut self) {
+        let operator_type = self.parser.previous.token_type;
+
+        match operator_type {
+            TokenType::False => self.emit_instruction(Instruction::OpFalse),
+            TokenType::Nil => self.emit_instruction(Instruction::OpNil),
+            TokenType::True => self.emit_instruction(Instruction::OpTrue),
             _ => return,
         }
     }
@@ -240,7 +272,7 @@ impl Compiler {
             // ParseFn::String => ,
             ParseFn::Number => self.number(),
             // ParseFn::And => ,
-            // ParseFn::Literal => ,
+            ParseFn::Literal => self.literal(),
             // ParseFn::Or => ,
             // ParseFn::Super => ,
             // ParseFn::This => ,
@@ -307,14 +339,14 @@ impl Compiler {
                 precedence: Precedence::Factor,
             },
             TokenType::Bang => ParseRule {
-                prefix: ParseFn::None,
+                prefix: ParseFn::Unary,
                 infix: ParseFn::None,
                 precedence: Precedence::None,
             },
             TokenType::BangEqual => ParseRule {
                 prefix: ParseFn::None,
-                infix: ParseFn::None,
-                precedence: Precedence::None,
+                infix: ParseFn::Binary,
+                precedence: Precedence::Equality,
             },
             TokenType::Equal => ParseRule {
                 prefix: ParseFn::None,
@@ -323,28 +355,28 @@ impl Compiler {
             },
             TokenType::EqualEqual => ParseRule {
                 prefix: ParseFn::None,
-                infix: ParseFn::None,
-                precedence: Precedence::None,
+                infix: ParseFn::Binary,
+                precedence: Precedence::Equality,
             },
             TokenType::Greater => ParseRule {
                 prefix: ParseFn::None,
-                infix: ParseFn::None,
-                precedence: Precedence::None,
+                infix: ParseFn::Binary,
+                precedence: Precedence::Comparison,
             },
             TokenType::GreaterEqual => ParseRule {
                 prefix: ParseFn::None,
-                infix: ParseFn::None,
-                precedence: Precedence::None,
+                infix: ParseFn::Binary,
+                precedence: Precedence::Comparison,
             },
             TokenType::Less => ParseRule {
                 prefix: ParseFn::None,
-                infix: ParseFn::None,
-                precedence: Precedence::None,
+                infix: ParseFn::Binary,
+                precedence: Precedence::Comparison,
             },
             TokenType::LessEqual => ParseRule {
                 prefix: ParseFn::None,
-                infix: ParseFn::None,
-                precedence: Precedence::None,
+                infix: ParseFn::Binary,
+                precedence: Precedence::Comparison,
             },
             TokenType::Identifier => ParseRule {
                 prefix: ParseFn::None,
@@ -377,7 +409,7 @@ impl Compiler {
                 precedence: Precedence::None,
             },
             TokenType::False => ParseRule {
-                prefix: ParseFn::None,
+                prefix: ParseFn::Literal,
                 infix: ParseFn::None,
                 precedence: Precedence::None,
             },
@@ -397,7 +429,7 @@ impl Compiler {
                 precedence: Precedence::None,
             },
             TokenType::Nil => ParseRule {
-                prefix: ParseFn::None,
+                prefix: ParseFn::Literal,
                 infix: ParseFn::None,
                 precedence: Precedence::None,
             },
@@ -427,7 +459,7 @@ impl Compiler {
                 precedence: Precedence::None,
             },
             TokenType::True => ParseRule {
-                prefix: ParseFn::None,
+                prefix: ParseFn::Literal,
                 infix: ParseFn::None,
                 precedence: Precedence::None,
             },

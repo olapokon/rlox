@@ -4,10 +4,17 @@ use crate::value::Value;
 #[derive(Debug, Clone, Copy)]
 pub enum Instruction {
     OpConstant(usize),
+    OpNil,
+    OpTrue,
+    OpFalse,
+    OpEqual,
+    OpGreater,
+    OpLess,
     OpAdd,
     OpSubtract,
     OpMultiply,
     OpDivide,
+    OpNot,
     OpNegate,
     OpReturn,
 }
@@ -77,10 +84,17 @@ impl Chunk {
                 println!("{:?}\tindex: {:?}\tvalue: {:?}", instruction, idx, constant);
             }
             Instruction::OpNegate
+            | Instruction::OpEqual
+            | Instruction::OpGreater
+            | Instruction::OpLess 
             | Instruction::OpAdd
             | Instruction::OpSubtract
             | Instruction::OpMultiply
             | Instruction::OpDivide
+            | Instruction::OpFalse
+            | Instruction::OpNil
+            | Instruction::OpTrue
+            | Instruction::OpNot
             | Instruction::OpReturn => println!("{:?}", instruction),
         }
     }

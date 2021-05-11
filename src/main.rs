@@ -50,8 +50,8 @@ fn run_file(path: String) {
     let result = VM::interpret(source);
 
     match result {
-        InterpretResult::InterpretCompileError => std::process::exit(65),
-        InterpretResult::InterpretRuntimeError => std::process::exit(70),
+        InterpretResult::CompileError => std::process::exit(65),
+        InterpretResult::RuntimeError => std::process::exit(70),
         _ => {}
     }
 }
