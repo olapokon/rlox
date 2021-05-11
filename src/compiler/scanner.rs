@@ -179,6 +179,9 @@ impl Scanner {
 
     fn skip_whitespace(&mut self) {
         loop {
+            if self.is_at_end() {
+                return;
+            }
             match self.peek() {
                 ' ' | '\r' | '\t' => {
                     self.advance();
@@ -189,7 +192,7 @@ impl Scanner {
                 }
                 '/' => {
                     if self.peek_next() == '/' {
-                        while self.peek() != '\n' && !self.is_at_end() {
+                        while !self.is_at_end() && self.peek() != '\n' {
                             self.advance();
                         }
                     } else {

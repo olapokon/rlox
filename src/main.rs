@@ -32,10 +32,7 @@ fn repl() {
         std::io::stdin()
             .read_line(&mut user_input)
             .expect("Failed to read input");
-
-        println!("{:?}", user_input.trim());
-        let input = user_input.clone();
-        VM::interpret(input);
+        VM::interpret(user_input.clone());
         user_input.clear();
     }
 }

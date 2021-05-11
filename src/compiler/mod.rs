@@ -59,8 +59,8 @@ impl Compiler {
         let mut compiler = Compiler::init(source.chars().collect());
 
         compiler.advance();
-        // compiler.expression();
-        // compiler.consume();
+        compiler.expression();
+        compiler.consume(TokenType::Eof, "Expect end of expression.");
 
         compiler.end();
 
@@ -79,6 +79,12 @@ impl Compiler {
         }
     }
 
+    fn lexeme_to_string(&self, token: Token) -> String {
+        self.scanner.source[token.start..(token.start + token.length as usize)as usize]
+            .iter()
+            .collect()
+    }
+
     fn advance(&mut self) {
         self.parser.previous = self.parser.current;
 
@@ -87,7 +93,10 @@ impl Compiler {
 
             // Report and skip all error tokens, so that the rest of the parser only sees valid ones.
             match self.parser.current.token_type {
-                TokenType::Error(_) => {}
+                TokenType::Error(_) => self.error_at(
+                    self.parser.current,
+                    &self.lexeme_to_string(self.parser.current),
+                ),
                 _ => break,
             }
         }
@@ -108,10 +117,7 @@ impl Compiler {
         match &token.token_type {
             TokenType::Eof => eprint!(" at end"),
             TokenType::Error(_) => {}
-            _ => eprint!(
-                " at {:?}",
-                self.scanner.source[token.start..token.length as usize].iter()
-            ),
+            _ => eprint!(" at {:?}", self.lexeme_to_string(token)),
         }
 
         eprintln!(": {}", message);
@@ -183,10 +189,8 @@ impl Compiler {
 
     fn number(&mut self) {
         // TODO: lexeme handling?
-        let value = self.scanner.source
-            [self.parser.previous.start..self.parser.previous.length as usize]
-            .iter()
-            .collect::<String>()
+        let value = self
+            .lexeme_to_string(self.parser.previous)
             .parse::<f64>()
             .unwrap();
         self.emit_constant(Value(value));
@@ -215,6 +219,10 @@ impl Compiler {
         self.parse_precedence(rule.precedence);
 
         match operator_type {
+            TokenType::Plus => self.emit_instruction(Instruction::OpAdd),
+            TokenType::Minus => self.emit_instruction(Instruction::OpSubtract),
+            TokenType::Star => self.emit_instruction(Instruction::OpMultiply),
+            TokenType::Slash => self.emit_instruction(Instruction::OpDivide),
             _ => return,
         }
     }
