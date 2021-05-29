@@ -2,6 +2,7 @@ mod chunk;
 mod compiler;
 mod vm;
 mod value;
+mod memory;
 
 use std::io::Write;
 use vm::*;

@@ -3,17 +3,21 @@ use crate::{
 	chunk::{Chunk, Instruction},
 	value::Value,
 };
+use crate::memory::Heap;
 
 const STACK_MAX: usize = 256;
 
 /// A virtual machine that interprets chunks of bytecode.
 pub struct VM {
 	/// The instruction pointer.
-	/// It is the index of the instruction about to be executed, in the Chunk's code array.
+	/// It is the index of the instruction about to be executed, in the current [Chunk]'s code array.
 	ip: usize,
 	/// The VM's stack.
 	stack: [Value; STACK_MAX],
+	/// The index pointing right after the last element of the stack.
 	stack_top: usize,
+	/// The VM's heap.
+	heap: Heap,
 }
 
 pub enum InterpretResult {
