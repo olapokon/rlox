@@ -23,11 +23,11 @@ pub enum Instruction {
 pub struct Chunk {
     /// Holds the Chunk's bytecode.
     pub bytecode: Vec<Instruction>,
-    /// Holds the Chunk's constant values.
-    constants: Vec<Value>,
     /// Exactly parallels the bytecode array.
     /// Holds the line number of each corresponding OpCode.
-    lines: Vec<i32>,
+    pub lines: Vec<i32>,
+    /// Holds the Chunk's constant values.
+    pub constants: Vec<Value>,
 }
 
 impl Chunk {

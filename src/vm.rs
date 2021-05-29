@@ -72,7 +72,7 @@ impl VM {
 				Instruction::OpNegate => match self.peek(0) {
 					Value::Number(val) => self.push_to_stack(Value::Number(-val)),
 					_ => {
-						self.runtime_error("Operand must be a number.", None, None);
+						self.runtime_error(chunk, "Operand must be a number.", None, None);
 						return InterpretResult::RuntimeError;
 					}
 				},
@@ -91,14 +91,14 @@ impl VM {
 						self.pop_from_stack();
 						operand_2
 					} else {
-						self.runtime_error("Operands must be numbers.", None, None);
+						self.runtime_error(chunk, "Operands must be numbers.", None, None);
 						return InterpretResult::RuntimeError;
 					};
 					let operand_1 = if let Value::Number(operand_1) = self.peek(0) {
 						self.pop_from_stack();
 						operand_1
 					} else {
-						self.runtime_error("Operands must be numbers.", None, None);
+						self.runtime_error(chunk, "Operands must be numbers.", None, None);
 						return InterpretResult::RuntimeError;
 					};
 					match instruction {
@@ -157,7 +157,7 @@ impl VM {
 		self.stack[self.stack_top - 1 - distance]
 	}
 
-	fn runtime_error(&mut self, message: &str, arg1: Option<&str>, arg2: Option<&str>) {
+	fn runtime_error(&mut self, chunk: Chunk, message: &str, arg1: Option<&str>, arg2: Option<&str>) {
 		eprint!("{}", message);
 		if arg1.is_some() {
 			eprint!(" {}", arg1.unwrap());
@@ -167,10 +167,8 @@ impl VM {
 		}
 		eprintln!();
 
-		// TODO: line number
-		// let instruction = chunk.bytecode[self.ip - 1];
-		// let line = chunk.lines[instruction];
-		// eprintln!("[line {}] in script", line);
+		let line = chunk.lines[self.ip - 1];
+		eprintln!("[line {}] in script", line);
 		self.reset_stack();
 	}
 
