@@ -163,15 +163,10 @@ impl Compiler {
     fn end(&mut self) {
         self.emit_instruction(Instruction::OpReturn);
 
-        //
-        //
-        // TODO: conditional compilation
+        #[cfg(feature = "debug_print_code")]
         if !self.parser.had_error {
             self.current_chunk.disassemble("code");
         }
-        //
-        //
-        //
     }
 
     /// Takes [Precedence] converted to i32.
