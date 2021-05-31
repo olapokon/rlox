@@ -16,8 +16,8 @@ pub struct VM {
 	stack: [Value; STACK_MAX],
 	/// The index pointing right after the last element of the stack.
 	stack_top: usize,
-	// The VM's heap.
-	// heap: Heap,
+	/// The VM's heap.
+	heap: Heap,
 }
 
 pub enum InterpretResult {
@@ -27,22 +27,21 @@ pub enum InterpretResult {
 }
 
 impl VM {
-	pub fn interpret(source: String) -> InterpretResult {
-		let r = match Compiler::compile(source) {
-			Ok(r) => r,
-			Err(_) => return InterpretResult::CompileError,
-		};
-
-		let mut vm = VM::init();
-		vm.run(r)
-	}
-
-	fn init() -> VM {
+	pub fn init() -> VM {
 		VM {
 			ip: 0,
 			stack: [Value::Number(0.0); STACK_MAX],
 			stack_top: 0,
+			heap: Heap::new(),
 		}
+	}
+
+	pub fn interpret(&mut self, source: String) -> InterpretResult {
+		let r = match Compiler::compile(source, &mut self.heap) {
+			Ok(r) => r,
+			Err(_) => return InterpretResult::CompileError,
+		};
+		self.run(r)
 	}
 
 	pub fn reset_stack(&mut self) {
@@ -52,7 +51,6 @@ impl VM {
 	fn run(&mut self, chunk: Chunk) -> InterpretResult {
 		// TODO: Check value type with peek instead of popping immediately?
 		while self.ip < chunk.bytecode.len() {
-
 			#[cfg(feature = "debug_trace_execution")]
 			if cfg!(feature = "debug_trace_execution") {
 				for i in 0..self.stack_top {
@@ -77,7 +75,7 @@ impl VM {
 					Value::Number(val) => {
 						self.pop_from_stack();
 						self.push_to_stack(Value::Number(-val))
-					},
+					}
 					_ => {
 						self.runtime_error(chunk, "Operand must be a number.", None, None);
 						return InterpretResult::RuntimeError;
