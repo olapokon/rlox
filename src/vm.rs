@@ -16,8 +16,8 @@ pub struct VM {
 	stack: [Value; STACK_MAX],
 	/// The index pointing right after the last element of the stack.
 	stack_top: usize,
-	/// The VM's heap.
-	heap: Heap,
+	// The VM's heap.
+	// heap: Heap,
 }
 
 pub enum InterpretResult {
@@ -74,7 +74,10 @@ impl VM {
 					self.push_to_stack(Value::Boolean(b))
 				}
 				Instruction::OpNegate => match self.peek(0) {
-					Value::Number(val) => self.push_to_stack(Value::Number(-val)),
+					Value::Number(val) => {
+						self.pop_from_stack();
+						self.push_to_stack(Value::Number(-val))
+					},
 					_ => {
 						self.runtime_error(chunk, "Operand must be a number.", None, None);
 						return InterpretResult::RuntimeError;
