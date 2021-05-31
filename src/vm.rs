@@ -128,8 +128,8 @@ impl VM {
 					}
 				}
 				Instruction::OpNil => self.push_to_stack(Value::Nil),
-				Instruction::OpTrue => self.push_to_stack(Value::True),
-				Instruction::OpFalse => self.push_to_stack(Value::False),
+				Instruction::OpTrue => self.push_to_stack(Value::Boolean(true)),
+				Instruction::OpFalse => self.push_to_stack(Value::Boolean(false)),
 				Instruction::OpConstant(idx) => {
 					let constant: Value = chunk.read_constant(idx);
 					self.push_to_stack(constant);
@@ -161,6 +161,7 @@ impl VM {
 		self.stack[self.stack_top - 1 - distance]
 	}
 
+	// TODO: Make a RuntimeError struct and refactor this method?
 	fn runtime_error(&mut self, chunk: Chunk, message: &str, arg1: Option<&str>, arg2: Option<&str>) {
 		eprint!("{}", message);
 		if arg1.is_some() {
