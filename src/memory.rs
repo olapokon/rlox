@@ -12,9 +12,13 @@ impl Heap {
 		}
 	}
 
-	/// Allocates a ValueObject in the heap and returns a Value wrapping its index.
-	pub fn allocate(&mut self, o: ValueObject) -> Value {
+	fn allocate(&mut self, o: ValueObject) -> Value {
 		self.objects.push(o);
 		Value::String(self.objects.len() - 1)
+	}
+
+	/// Allocates a ValueObject in the heap and returns a Value wrapping its index.
+	pub fn allocate_string(&mut self, s: String) -> Value {
+		self.allocate(ValueObject::String(s))
 	}
 }

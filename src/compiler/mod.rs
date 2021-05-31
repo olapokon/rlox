@@ -225,7 +225,7 @@ impl<'h> Compiler<'h> {
 			self.parser.previous.start + 1,
 			(self.parser.previous.length - 1) as usize,
 		);
-		let v: Value = self.heap.allocate(ValueObject::String(s));
+		let v: Value = self.heap.allocate_string(s);
 		self.emit_constant(v);
 	}
 
