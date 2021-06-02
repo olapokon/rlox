@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{fmt::Display, rc::Rc};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -75,6 +75,12 @@ impl Value {
         }
     }
 }
+
+// impl Display for Value {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         todo!()
+//     }
+// }
 
 impl Default for Value {
     fn default() -> Self {

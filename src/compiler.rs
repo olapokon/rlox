@@ -214,7 +214,7 @@ impl Compiler {
         // Copy the string from the source string, without the quote marks.
         let s = self.section_to_string(
             self.parser.previous.start + 1,
-            (self.parser.previous.length - 1) as usize,
+            (self.parser.previous.length - 2) as usize,
         );
         let v: Value = Value::String(Rc::new(s));
         self.emit_constant(v);

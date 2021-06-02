@@ -1,4 +1,4 @@
-use std::cell::{RefCell};
+use std::cell::{Cell};
 
 use crate::{binary_arithmetic_op, binary_boolean_op, compiler::*};
 use crate::{
@@ -14,7 +14,7 @@ pub struct VM {
     /// It is the index of the instruction about to be executed, in the current [Chunk]'s code array.
     ip: usize,
     /// The VM's stack.
-    stack: [RefCell<Value>; STACK_MAX],
+    stack: [Cell<Value>; STACK_MAX],
     /// The index pointing right after the last element of the stack.
     stack_top: usize,
 }
@@ -28,7 +28,7 @@ pub enum VMError {
 
 impl VM {
     pub fn init() -> VM {
-        const v: RefCell<Value> = RefCell::new(Value::Nil);
+        const v: Cell<Value> = Cell::new(Value::Nil);
         VM {
             ip: 0,
             stack: [v; STACK_MAX],
@@ -54,7 +54,7 @@ impl VM {
             #[cfg(feature = "debug_trace_execution")]
             if cfg!(feature = "debug_trace_execution") {
                 for i in 0..self.stack_top {
-                    print!("[{:?}]", self.stack[i]);
+                    print!("[{:?}]", self.stack[i].get_mut());
                 }
                 println!();
                 chunk.disassemble_instruction(self.ip);
