@@ -5,6 +5,7 @@ pub enum Value {
     Boolean(bool),
     Number(f64),
     Nil,
+    // TODO: string interning? may not be necessary
     String(Rc<String>),
 }
 
@@ -76,11 +77,16 @@ impl Value {
     }
 }
 
-// impl Display for Value {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         todo!()
-//     }
-// }
+impl Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Boolean(b) => write!(f, "{}", b),
+            Value::Number(n) => write!(f, "{}", n),
+            Value::Nil => write!(f, "{}", "NIL"),
+            Value::String(s) => write!(f, "{}", s),
+        }
+    }
+}
 
 impl Default for Value {
     fn default() -> Self {

@@ -58,9 +58,11 @@ impl Compiler {
         let mut compiler = Compiler::init(source.chars().collect());
 
         compiler.advance();
-        compiler.expression();
-        compiler.consume(TokenType::Eof, "Expect end of expression.");
-
+        // compiler.expression();
+        while !compiler.match_token(TokenType::Eof) {
+            compiler.declaration();
+        }
+        // compiler.consume(TokenType::Eof, "Expect end of expression.");
         compiler.end();
 
         if compiler.parser.had_error {
@@ -192,8 +194,36 @@ impl Compiler {
         }
     }
 
+    fn match_token(&mut self, tt: TokenType) -> bool {
+        if !self.check(tt) {
+            return false;
+        }
+        self.advance();
+        return true;
+    }
+
+    fn check(&self, tt: TokenType) -> bool {
+        self.parser.current.token_type == tt
+    }
+
     fn expression(&mut self) {
         self.parse_precedence(Precedence::Assignment as i32);
+    }
+
+    fn declaration(&mut self) {
+        self.statement();
+    }
+
+    fn statement(&mut self) {
+        if self.match_token(TokenType::Print) {
+            self.print_statement();
+        }
+    }
+
+    fn print_statement(&mut self) {
+        self.expression();
+        self.consume(TokenType::Semicolon, "Expect ';' after value.");
+        self.emit_instruction(Instruction::OpPrint);
     }
 
     fn number(&mut self) {

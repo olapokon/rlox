@@ -1,4 +1,4 @@
-use std::cell::{Cell};
+use std::cell::Cell;
 
 use crate::{binary_arithmetic_op, binary_boolean_op, compiler::*};
 use crate::{
@@ -63,21 +63,18 @@ impl VM {
 
             let instruction = self.read_instruction(&chunk);
             match instruction {
-                Instruction::OpReturn => {
-                    let return_val = self.pop_from_stack();
-                    println!("{:?}", return_val);
-                    return Ok(());
-                }
                 Instruction::OpNot => {
                     let b = is_falsey(self.pop_from_stack());
                     self.push_to_stack(Value::Boolean(b))
                 }
-                Instruction::OpNegate => if let Value::Number(val) = self.pop_from_stack() {
+                Instruction::OpNegate => {
+                    if let Value::Number(val) = self.pop_from_stack() {
                         self.push_to_stack(Value::Number(-val))
                     } else {
                         self.runtime_error(chunk, "Operand must be a number.", None, None);
                         return Err(VMError::RuntimeError);
-                    },
+                    }
+                }
                 Instruction::OpEqual => {
                     let v_2 = self.pop_from_stack();
                     let v_1 = self.pop_from_stack();
@@ -127,6 +124,12 @@ impl VM {
                     let constant: Value = chunk.read_constant(idx);
                     self.push_to_stack(constant);
                 }
+                Instruction::OpPrint => print!("{}", self.pop_from_stack()),
+                Instruction::OpReturn => {
+                    // let return_val = self.pop_from_stack();
+                    // println!("{:?}", return_val);
+                    return Ok(());
+                }
             }
         }
 
@@ -150,7 +153,7 @@ impl VM {
         instruction
     }
 
-	// TODO: use peek in some cases instead of popping immediately?
+    // TODO: use peek in some cases instead of popping immediately?
     // cloning must be refactored in that case
     //
     // fn peek(&self, distance: usize) -> Value {
