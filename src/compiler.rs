@@ -102,9 +102,14 @@ impl Compiler {
 
             // Report and skip all error tokens, so that the rest of the parser only sees valid ones.
             match self.parser.current.token_type {
-                TokenType::Error(_) => self.error_at(
+                TokenType::Error(e) => self.error_at(
                     self.parser.current,
-                    &self.lexeme_to_string(self.parser.current),
+                    match e {
+                        crate::scanner::ScannerError::UnexpectedCharacter => "Unexpected character.",
+                        crate::scanner::ScannerError::UnterminatedString => "Unterminated string.",
+                        // TODO: remove this error
+                        crate::scanner::ScannerError::UninitializedToken => "Uninitialized token.",
+                    },
                 ),
                 _ => break,
             }
