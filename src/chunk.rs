@@ -14,6 +14,7 @@ pub enum Instruction {
     OpSubtract,
     OpMultiply,
     OpDivide,
+    OpPop,
     OpNot,
     OpNegate,
 	OpPrint,
@@ -97,6 +98,7 @@ impl Chunk {
             | Instruction::OpNil
             | Instruction::OpTrue
             | Instruction::OpNot
+            | Instruction::OpPop
             | Instruction::OpPrint
             | Instruction::OpReturn => println!("{:?}", instruction),
         }

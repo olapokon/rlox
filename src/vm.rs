@@ -124,6 +124,7 @@ impl VM {
                     let constant: Value = chunk.read_constant(idx);
                     self.push_to_stack(constant);
                 }
+                Instruction::OpPop => { self.pop_from_stack(); },
                 Instruction::OpPrint => print!("{}", self.pop_from_stack()),
                 Instruction::OpReturn => {
                     // let return_val = self.pop_from_stack();
