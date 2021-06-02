@@ -50,7 +50,8 @@ impl Chunk {
 	}
 
 	pub fn read_constant(&self, index: usize) -> Value {
-		self.constants[index]
+		// TODO: refactor clone?
+		self.constants[index].clone()
 	}
 
 	/// Adds a constant to the [Chunk]'s [ValueArray] and returns the index.
@@ -80,7 +81,7 @@ impl Chunk {
 		let instruction = self.bytecode[index];
 		match instruction {
 			Instruction::OpConstant(idx) => {
-				let constant = self.constants[idx];
+				let constant = &self.constants[idx];
 				println!("{:?}\tindex: {:?}\tvalue: {:?}", instruction, idx, constant);
 			}
 			Instruction::OpNegate

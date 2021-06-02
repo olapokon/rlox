@@ -48,9 +48,7 @@ impl VM {
         self.stack_top = 0;
     }
 
-    // TODO: refactor InterpretResult to Result?
     fn run(&mut self, chunk: Chunk) -> VMResult {
-        // TODO: Check value type with peek instead of popping immediately?
         while self.ip < chunk.bytecode.len() {
             // conditional compilation for logging
             #[cfg(feature = "debug_trace_execution")]
@@ -74,36 +72,28 @@ impl VM {
                     let b = is_falsey(self.pop_from_stack());
                     self.push_to_stack(Value::Boolean(b))
                 }
-                Instruction::OpNegate => match self.peek(0) {
-                    Value::Number(val) => {
-                        self.pop_from_stack();
+                Instruction::OpNegate => if let Value::Number(val) = self.pop_from_stack() {
                         self.push_to_stack(Value::Number(-val))
-                    }
-                    _ => {
+                    } else {
                         self.runtime_error(chunk, "Operand must be a number.", None, None);
                         return Err(VMError::RuntimeError);
-                    }
-                },
+                    },
                 Instruction::OpEqual => {
                     let v_2 = self.pop_from_stack();
                     let v_1 = self.pop_from_stack();
                     self.push_to_stack(Value::Boolean(Value::equals(v_1, v_2)));
                 }
                 Instruction::OpAdd => {
-                    let operand_1 = self.peek(1);
-                    let operand_2 = self.peek(0);
-                    if Value::is_string(operand_1) {
+                    let operand_2 = self.pop_from_stack();
+                    let operand_1 = self.pop_from_stack();
+                    if Value::is_string(&operand_1) {
                         if let Ok(v) = Value::concatenate_strings(&operand_1, &operand_2) {
-                            self.pop_from_stack();
-                            self.pop_from_stack();
                             self.push_to_stack(v);
                         } else {
                             return Err(VMError::RuntimeError);
                         };
                     } else {
                         if let Ok(v) = binary_arithmetic_op!(operand_1 + operand_2) {
-                            self.pop_from_stack();
-                            self.pop_from_stack();
                             self.push_to_stack(v);
                         } else {
                             return Err(VMError::RuntimeError);
@@ -115,8 +105,8 @@ impl VM {
                 | Instruction::OpDivide
                 | Instruction::OpGreater
                 | Instruction::OpLess => {
-                    let operand_1 = self.peek(1);
-                    let operand_2 = self.peek(0);
+                    let operand_2 = self.pop_from_stack();
+                    let operand_1 = self.pop_from_stack();
                     if let Ok(v) = match instruction {
                         Instruction::OpSubtract => binary_arithmetic_op!(operand_1 - operand_2),
                         Instruction::OpMultiply => binary_arithmetic_op!(operand_1 * operand_2),
@@ -125,8 +115,6 @@ impl VM {
                         Instruction::OpLess => binary_boolean_op!(operand_1 < operand_2),
                         _ => return Err(VMError::RuntimeError),
                     } {
-                        self.pop_from_stack();
-                        self.pop_from_stack();
                         self.push_to_stack(v);
                     } else {
                         return Err(VMError::RuntimeError);
@@ -162,9 +150,12 @@ impl VM {
         instruction
     }
 
-    fn peek(&self, distance: usize) -> &Value {
-        &self.stack[self.stack_top - 1 - distance].borrow()
-    }
+	// TODO: use peek in some cases instead of popping immediately?
+    // cloning must be refactored in that case
+    //
+    // fn peek(&self, distance: usize) -> Value {
+    //     self.stack[self.stack_top - 1 - distance].clone().take()
+    // }
 
     // TODO: Make a RuntimeError struct and refactor this method?
     fn runtime_error(
