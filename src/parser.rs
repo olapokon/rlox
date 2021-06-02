@@ -1,6 +1,5 @@
 use super::scanner::{ScannerError, Token, TokenType};
 
-
 pub struct Parser {
     pub current: Token,
     pub previous: Token,

@@ -1,16 +1,83 @@
-#[derive(Debug, Clone, Copy)]
-pub enum Value {
-	Boolean(bool),
-	Number(f64),
-	Nil,
-	String(usize),
-}
+use std::rc::Rc;
 
-/// Values that are stored in the VM's heap.
-/// They hold an index to their position in the Heap's vector.
 #[derive(Debug, Clone)]
-pub enum ValueObject {
-	String(String),
+pub enum Value {
+    Boolean(bool),
+    Number(f64),
+    Nil,
+    String(Rc<String>),
 }
 
-// TODO: Value Display?
+#[macro_export]
+macro_rules! binary_arithmetic_op {
+    ($v1:ident $op:tt $v2:ident) => {
+        match ($v1, $v2) {
+            (Value::Number(n1), Value::Number(n2)) => {
+                let n1 = <f64>::clone(&n1);
+                let n2 = <f64>::clone(&n2);
+                Ok(Value::Number(n1 $op n2))
+            }
+            _ => Err("values must both be either strings or numbers"),
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! binary_boolean_op {
+    ($v1:ident $op:tt $v2:ident) => {
+        match ($v1, $v2) {
+            (Value::Number(n1), Value::Number(n2)) => {
+                let n1 = <f64>::clone(&n1);
+                let n2 = <f64>::clone(&n2);
+                Ok(Value::Boolean(n1 $op n2))
+            }
+            _ => Err("values must both be either strings or numbers"),
+        }
+    };
+}
+
+impl Value {
+    pub fn concatenate_strings(v1: &Value, v2: &Value) -> Result<Value, &'static str> {
+        match (v1, v2) {
+            (Value::String(s1), Value::String(s2)) => {
+                let mut s1 = String::clone(s1);
+                let s2 = String::clone(s2);
+                s1.push_str(&s2);
+                return Ok(Value::String(Rc::new(s1)));
+            }
+            _ => Err("values must both be either strings or numbers"),
+        }
+    }
+
+    pub fn equals(v1: Value, v2: Value) -> bool {
+        match v1 {
+            Value::Boolean(b1) => match v2 {
+                Value::Boolean(b2) => b1 == b2,
+                _ => false,
+            },
+            Value::Number(n1) => match v2 {
+                Value::Number(n2) => n1 == n2,
+                _ => false,
+            },
+            Value::Nil => true,
+            Value::String(s1) => match v2 {
+                Value::String(s2) => s1.eq(&s2),
+                _ => false,
+            },
+        }
+    }
+
+    pub fn is_string(v: &Value) -> bool {
+        if let Value::String(_) = v {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl Default for Value {
+    fn default() -> Self {
+        Value::Nil
+    }
+}
