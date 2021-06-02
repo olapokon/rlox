@@ -209,7 +209,7 @@ impl Scanner {
     }
 
     fn string(&mut self) -> Token {
-        while self.peek() != '"' && !self.is_at_end() {
+        while !self.is_at_end() && self.peek() != '"' {
             if self.peek() == '\n' {
                 self.line += 1
             };
@@ -217,6 +217,7 @@ impl Scanner {
         }
 
         if self.is_at_end() {
+            // TODO: fix error message
             return self.make_token(TokenType::Error(ScannerError::UnterminatedString));
         }
 
