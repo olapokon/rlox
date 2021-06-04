@@ -1,4 +1,5 @@
 use std::cell::Cell;
+use std::collections::HashMap;
 
 use crate::{binary_arithmetic_op, binary_boolean_op, compiler::*};
 use crate::{
@@ -17,6 +18,8 @@ pub struct VM {
     stack: [Cell<Value>; STACK_MAX],
     /// The index pointing right after the last element of the stack.
     stack_top: usize,
+    /// All global variables.
+    globals: HashMap<String, Value>,
 }
 
 pub type VMResult = Result<(), VMError>;
@@ -33,6 +36,7 @@ impl VM {
             ip: 0,
             stack: [v; STACK_MAX],
             stack_top: 0,
+            globals: HashMap::new(),
         }
     }
 
@@ -74,6 +78,19 @@ impl VM {
                         self.runtime_error(chunk, "Operand must be a number.", None, None);
                         return Err(VMError::RuntimeError);
                     }
+                }
+                Instruction::OpDefineGlobal(index) => {
+                    if let Value::String(name) = chunk.read_constant(index) {
+                        let val = self.pop_from_stack();
+                        self.globals.insert(String::clone(name), val);
+                        // TODO: remove this print
+                        println!(
+                            "DECLARING NEW GLOBAL, TABLE AFTER INSERTION: {:?}",
+                            &self.globals
+                        );
+                    } else {
+                        return Err(VMError::RuntimeError);
+                    };
                 }
                 Instruction::OpEqual => {
                     let v_2 = self.pop_from_stack();
@@ -121,10 +138,12 @@ impl VM {
                 Instruction::OpTrue => self.push_to_stack(Value::Boolean(true)),
                 Instruction::OpFalse => self.push_to_stack(Value::Boolean(false)),
                 Instruction::OpConstant(idx) => {
-                    let constant: Value = chunk.read_constant(idx);
-                    self.push_to_stack(constant);
+                    let constant = chunk.read_constant(idx);
+                    self.push_to_stack(constant.clone());
                 }
-                Instruction::OpPop => { self.pop_from_stack(); },
+                Instruction::OpPop => {
+                    self.pop_from_stack();
+                }
                 Instruction::OpPrint => print!("{}", self.pop_from_stack()),
                 Instruction::OpReturn => {
                     // let return_val = self.pop_from_stack();

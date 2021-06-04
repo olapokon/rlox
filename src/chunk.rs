@@ -6,8 +6,9 @@ pub enum Instruction {
     OpConstant(usize),
     OpNil,
     OpTrue,
-    OpFalse,
+    OpDefineGlobal(usize),
     OpEqual,
+    OpFalse,
     OpGreater,
     OpLess,
     OpAdd,
@@ -17,7 +18,7 @@ pub enum Instruction {
     OpPop,
     OpNot,
     OpNegate,
-	OpPrint,
+    OpPrint,
     OpReturn,
 }
 
@@ -51,9 +52,10 @@ impl Chunk {
         self.bytecode[index]
     }
 
-    pub fn read_constant(&self, index: usize) -> Value {
-        // TODO: refactor clone?
-        self.constants[index].clone()
+    pub fn read_constant(&self, index: usize) -> &Value {
+        // TODO: refactor clone();
+        // self.constants[index].clone()
+        &self.constants[index]
     }
 
     /// Adds a constant to the [Chunk]'s [ValueArray] and returns the index.
@@ -82,7 +84,7 @@ impl Chunk {
 
         let instruction = self.bytecode[index];
         match instruction {
-            Instruction::OpConstant(idx) => {
+            Instruction::OpConstant(idx) | Instruction::OpDefineGlobal(idx) => {
                 let constant = &self.constants[idx];
                 println!("{:?}\tindex: {:?}\tvalue: {:?}", instruction, idx, constant);
             }

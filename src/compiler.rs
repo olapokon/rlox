@@ -1,5 +1,5 @@
-use core::f64;
-use std::rc::Rc;
+use core::{f64};
+use std::{rc::Rc, usize};
 
 use crate::{
     chunk::{Chunk, Instruction},
@@ -216,11 +216,44 @@ impl Compiler {
     }
 
     fn declaration(&mut self) {
-        self.statement();
+        if self.match_token(TokenType::Var) {
+            self.var_declaration();
+        } else {
+            self.statement();
+        }
 
         if self.parser.panic_mode {
             self.synchronize();
         }
+    }
+
+    fn var_declaration(&mut self) {
+        // TODO: global variables?
+        let global = self.parse_variable("Expect variable name.");
+
+        if self.match_token(TokenType::Equal) {
+            self.expression();
+        } else {
+            // if the variable is not being initialized, set it to nil
+            self.emit_instruction(Instruction::OpNil);
+        }
+        self.consume(TokenType::Semicolon, "Expect ';' after variable declaration.");
+
+        // TODO: global variables?
+        self.define_variable(global);
+    }
+
+    fn parse_variable(&mut self, error_message: &str) -> usize {
+        self.consume(TokenType::Identifier, error_message);
+        return self.identifier_constant(self.parser.previous);
+    }
+
+    fn identifier_constant(&mut self, name: Token) -> usize {
+        return self.make_constant(Value::String(Rc::new(self.lexeme_to_string(name))))
+    }
+
+    fn define_variable(&mut self, global: usize) {
+        self.emit_instruction(Instruction::OpDefineGlobal(global));
     }
 
     fn synchronize(&mut self) {
