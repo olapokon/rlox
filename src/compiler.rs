@@ -30,7 +30,7 @@ enum ParseFn {
     // Dot,
     Unary,
     Binary,
-    // Variable,
+    Variable,
     String,
     Number,
     // And,
@@ -173,11 +173,18 @@ impl Compiler {
 
     fn end(&mut self) {
         self.emit_instruction(Instruction::OpReturn);
-
+        // conditional compilation for logging
         #[cfg(feature = "debug_print_code")]
         if !self.parser.had_error {
+            self.print_constants();
             self.current_chunk.disassemble("code");
         }
+    }
+
+    fn print_constants(&self) {
+        println!("chunk constants:");
+        self.current_chunk.constants.iter().for_each(|con| println!("\t{:?}", con));
+        println!();
     }
 
     /// Takes [Precedence] converted to i32.
@@ -307,6 +314,15 @@ impl Compiler {
         self.emit_constant(Value::Number(value));
     }
 
+    fn variable(&mut self) {
+        self.named_variable(self.parser.previous);
+    }
+
+    fn named_variable(&mut self, name: Token) {
+        let index = self.identifier_constant(name);
+        self.emit_instruction(Instruction::OpGetGlobal(index));
+    }
+
     fn grouping(&mut self) {
         self.expression();
         self.consume(TokenType::RightParen, "Expect ')' after expression.");
@@ -379,7 +395,7 @@ impl Compiler {
             // ParseFn::Dot => ,
             ParseFn::Unary => self.unary(),
             ParseFn::Binary => self.binary(),
-            // ParseFn::Variable => ,
+            ParseFn::Variable => self.variable(),
             ParseFn::String => self.string(),
             ParseFn::Number => self.number(),
             // ParseFn::And => ,
@@ -490,7 +506,7 @@ impl Compiler {
                 precedence: Precedence::Comparison,
             },
             TokenType::Identifier => ParseRule {
-                prefix: ParseFn::None,
+                prefix: ParseFn::Variable,
                 infix: ParseFn::None,
                 precedence: Precedence::None,
             },

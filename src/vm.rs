@@ -79,15 +79,27 @@ impl VM {
                         return Err(VMError::RuntimeError);
                     }
                 }
+                Instruction::OpGetGlobal(index) => {
+                    if let Value::String(name) = chunk.read_constant(index) {
+                        let val = self
+                            .globals
+                            .get(&name.to_string())
+                            .ok_or(VMError::RuntimeError)?
+                            .clone();
+                        self.push_to_stack(val);
+                    } else {
+                        return Err(VMError::RuntimeError);
+                    };
+                }
                 Instruction::OpDefineGlobal(index) => {
                     if let Value::String(name) = chunk.read_constant(index) {
                         let val = self.pop_from_stack();
                         self.globals.insert(String::clone(name), val);
+                        //
                         // TODO: remove this print
-                        println!(
-                            "DECLARING NEW GLOBAL, TABLE AFTER INSERTION: {:?}",
-                            &self.globals
-                        );
+                        println!("\nDEFINING NEW GLOBAL");
+                        self.print_globals();
+                        //
                     } else {
                         return Err(VMError::RuntimeError);
                     };
@@ -201,8 +213,15 @@ impl VM {
         eprintln!("[line {}] in script", line);
         self.reset_stack();
     }
+
+    fn print_globals(&self) {
+        println!("VM globals:");
+        self.globals.iter().for_each(|con| println!("\t{:?}", con));
+        println!();
+    }
 }
 
+// TODO: move to value.rs
 fn is_falsey(v: Value) -> bool {
     match v {
         Value::Nil => true,

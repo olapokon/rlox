@@ -9,6 +9,7 @@ pub enum Instruction {
     OpDefineGlobal(usize),
     OpEqual,
     OpFalse,
+    OpGetGlobal(usize),
     OpGreater,
     OpLess,
     OpAdd,
@@ -84,7 +85,9 @@ impl Chunk {
 
         let instruction = self.bytecode[index];
         match instruction {
-            Instruction::OpConstant(idx) | Instruction::OpDefineGlobal(idx) => {
+            Instruction::OpConstant(idx)
+            | Instruction::OpDefineGlobal(idx)
+            | Instruction::OpGetGlobal(idx) => {
                 let constant = &self.constants[idx];
                 println!("{:?}\tindex: {:?}\tvalue: {:?}", instruction, idx, constant);
             }
