@@ -97,8 +97,8 @@ impl VM {
                         self.globals.insert(String::clone(name), val);
                         //
                         // TODO: remove this print
-                        println!("\nDEFINING NEW GLOBAL");
-                        self.print_globals();
+                        // println!("\nDEFINING NEW GLOBAL");
+                        // self.print_globals();
                         //
                     } else {
                         return Err(VMError::RuntimeError);

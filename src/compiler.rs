@@ -176,14 +176,16 @@ impl Compiler {
         // conditional compilation for logging
         #[cfg(feature = "debug_print_code")]
         if !self.parser.had_error {
-            self.print_constants();
+            self.print_current_chunk_constants();
             self.current_chunk.disassemble("code");
         }
     }
 
-    fn print_constants(&self) {
+    fn print_current_chunk_constants(&self) {
         println!("chunk constants:");
-        self.current_chunk.constants.iter().for_each(|con| println!("\t{:?}", con));
+        self.current_chunk.constants.iter()
+            .enumerate()
+            .for_each(|(i, con)| println!("\t{}: {:?}", i, con));
         println!();
     }
 
