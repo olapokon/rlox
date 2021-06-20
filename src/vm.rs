@@ -75,7 +75,7 @@ impl VM {
                     if let Value::Number(val) = self.pop_from_stack() {
                         self.push_to_stack(Value::Number(-val))
                     } else {
-                        self.runtime_error(chunk, "Operand must be a number.", None, None);
+                        self.runtime_error(&chunk, "Operand must be a number.", None, None);
                         return Err(VMError::RuntimeError);
                     }
                 }
@@ -87,6 +87,32 @@ impl VM {
                             .ok_or(VMError::RuntimeError)?
                             .clone();
                         self.push_to_stack(val);
+                    } else {
+                        return Err(VMError::RuntimeError);
+                    };
+                }
+                Instruction::OpSetGlobal(index) => {
+                    if let Value::String(name) = chunk.read_constant(index) {
+                        // cannot set uninitialized variable
+                        // in case of error, delete it from the table (only relevant for the REPL)
+                        if !self.globals.contains_key(&name.to_string()) {
+                            self.globals.remove(&name.to_string());
+                            self.runtime_error(
+                                &chunk,
+                                "Undefined variable {}",
+                                Some(&name.to_string()),
+                                None,
+                            );
+                            return Err(VMError::RuntimeError);
+                        }
+
+                        // value is not popped from the stack after setting
+                        // assignment is an expression so the value should be present at the top
+                        let val = self.stack[self.stack_top - 1].take();
+                        self.stack[self.stack_top - 1] = Cell::new(val.clone());
+                        self.globals
+                            .insert(name.to_string(), val)
+                            .ok_or(VMError::RuntimeError)?;
                     } else {
                         return Err(VMError::RuntimeError);
                     };
@@ -195,7 +221,7 @@ impl VM {
     // TODO: Make a RuntimeError struct and refactor this method?
     fn runtime_error(
         &mut self,
-        chunk: Chunk,
+        chunk: &Chunk,
         message: &str,
         arg1: Option<&str>,
         arg2: Option<&str>,

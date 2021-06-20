@@ -1,4 +1,4 @@
-use core::{f64};
+use core::f64;
 use std::{rc::Rc, usize};
 
 use crate::{
@@ -105,7 +105,9 @@ impl Compiler {
                 TokenType::Error(e) => self.error_at(
                     self.parser.current,
                     match e {
-                        crate::scanner::ScannerError::UnexpectedCharacter => "Unexpected character.",
+                        crate::scanner::ScannerError::UnexpectedCharacter => {
+                            "Unexpected character."
+                        }
                         crate::scanner::ScannerError::UnterminatedString => "Unterminated string.",
                         // TODO: remove this error
                         crate::scanner::ScannerError::UninitializedToken => "Uninitialized token.",
@@ -183,7 +185,9 @@ impl Compiler {
 
     fn print_current_chunk_constants(&self) {
         println!("chunk constants:");
-        self.current_chunk.constants.iter()
+        self.current_chunk
+            .constants
+            .iter()
             .enumerate()
             .for_each(|(i, con)| println!("\t{}: {:?}", i, con));
         println!();
@@ -199,12 +203,17 @@ impl Compiler {
             return;
         }
 
-        self.parse_fn(prefix_rule.prefix);
+        let can_assign: bool = precedence <= Precedence::Assignment as i32;
+        self.parse_fn(prefix_rule.prefix, can_assign);
 
         while precedence <= Compiler::rules(self.parser.current.token_type).precedence as i32 {
             self.advance();
             let infix_rule = Compiler::rules(self.parser.previous.token_type);
-            self.parse_fn(infix_rule.infix);
+            self.parse_fn(infix_rule.infix, can_assign);
+        }
+
+        if can_assign && self.match_token(TokenType::Equal) {
+            self.error("Invalid assignment target.");
         }
     }
 
@@ -246,7 +255,10 @@ impl Compiler {
             // if the variable is not being initialized, set it to nil
             self.emit_instruction(Instruction::OpNil);
         }
-        self.consume(TokenType::Semicolon, "Expect ';' after variable declaration.");
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after variable declaration.",
+        );
 
         // TODO: global variables?
         self.define_variable(global);
@@ -258,7 +270,7 @@ impl Compiler {
     }
 
     fn identifier_constant(&mut self, name: Token) -> usize {
-        return self.make_constant(Value::String(Rc::new(self.lexeme_to_string(name))))
+        return self.make_constant(Value::String(Rc::new(self.lexeme_to_string(name))));
     }
 
     fn define_variable(&mut self, global: usize) {
@@ -316,13 +328,19 @@ impl Compiler {
         self.emit_constant(Value::Number(value));
     }
 
-    fn variable(&mut self) {
-        self.named_variable(self.parser.previous);
+    fn variable(&mut self, can_assign: bool) {
+        self.named_variable(self.parser.previous, can_assign);
     }
 
-    fn named_variable(&mut self, name: Token) {
+    fn named_variable(&mut self, name: Token, can_assign: bool) {
         let index = self.identifier_constant(name);
-        self.emit_instruction(Instruction::OpGetGlobal(index));
+
+        if can_assign && self.match_token(TokenType::Equal) {
+            self.expression();
+            self.emit_instruction(Instruction::OpSetGlobal(index));
+        } else {
+            self.emit_instruction(Instruction::OpGetGlobal(index));
+        }
     }
 
     fn grouping(&mut self) {
@@ -390,14 +408,14 @@ impl Compiler {
         }
     }
 
-    fn parse_fn(&mut self, parse_fn: ParseFn) {
+    fn parse_fn(&mut self, parse_fn: ParseFn, can_assign: bool) {
         match parse_fn {
             // ParseFn::Call => ,
             ParseFn::Grouping => self.grouping(),
             // ParseFn::Dot => ,
             ParseFn::Unary => self.unary(),
             ParseFn::Binary => self.binary(),
-            ParseFn::Variable => self.variable(),
+            ParseFn::Variable => self.variable(can_assign),
             ParseFn::String => self.string(),
             ParseFn::Number => self.number(),
             // ParseFn::And => ,
