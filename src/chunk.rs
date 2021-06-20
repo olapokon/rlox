@@ -74,6 +74,7 @@ impl Chunk {
         println!("== /{} ==\n", name);
     }
 
+    // TODO: implement Display for [Instruction] instead
     pub fn disassemble_instruction(&self, index: usize) {
         // print!("instruction: {:?}\t", index);
         print!("{:?} ", index);
