@@ -76,7 +76,6 @@ impl Chunk {
 
     // TODO: implement Display for [Instruction] instead
     pub fn disassemble_instruction(&self, index: usize) {
-        // print!("instruction: {:?}\t", index);
         print!("{:?} ", index);
         if index > 0 && self.lines[index] == self.lines[index - 1] {
             print!("      |\t\t");
@@ -90,7 +89,7 @@ impl Chunk {
             | Instruction::OpDefineGlobal(idx)
             | Instruction::OpGetGlobal(idx) => {
                 let constant = &self.constants[idx];
-                println!("{:?}\tindex: {:?}\tvalue: {:?}", instruction, idx, constant);
+                println!("{:?}    \tvalue: {:?}", instruction, constant);
             }
             Instruction::OpNegate
             | Instruction::OpEqual
