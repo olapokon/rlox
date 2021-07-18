@@ -21,9 +21,9 @@ pub struct VM {
     /// All global variables.
     globals: HashMap<String, Value>,
 
-    /// Only for testing. Holds the last value printed by the print statement,
-    /// so that it can be compared to the expected output in the tests.
-    pub latest_printed_value: Value,
+    /// Only for testing. Holds the values printed by the print statement,
+    /// so that they can be compared to the expected output in the tests.
+    pub printed_values: Vec<Value>,
     /// Only for testing. Holds the latest error value
     pub latest_error_message: String,
 }
@@ -44,7 +44,7 @@ impl VM {
             stack: [v; STACK_MAX],
             stack_top: 0,
             globals: HashMap::new(),
-            latest_printed_value: Value::Nil,
+            printed_values: Vec::new(),
             latest_error_message: String::new(),
         }
     }
@@ -214,7 +214,7 @@ impl VM {
                 Instruction::OpPrint => {
                     let v = self.pop_from_stack();
                     // TODO: conditional execution only for tests
-                    self.latest_printed_value = v.clone();
+                    self.printed_values.push(v.clone());
                     //
                     print!("{}", v);
                 }

@@ -72,7 +72,7 @@ mod tests {
         let source = "print (5 - (3 - 1)) + -1;".to_string();
         let mut vm = VM::init();
         vm.interpret(source)?;
-        assert_eq!(vm.latest_printed_value, Value::Number(2f64));
+        assert_eq!(vm.printed_values.pop().unwrap(), Value::Number(2f64));
         Ok(())
     }
 
@@ -81,7 +81,7 @@ mod tests {
         let source = "print !(5 - 4 > 3 * 2 == !nil);".to_string();
         let mut vm = VM::init();
         vm.interpret(source)?;
-        assert_eq!(vm.latest_printed_value, Value::Boolean(true));
+        assert_eq!(vm.printed_values.pop().unwrap(), Value::Boolean(true));
         Ok(())
     }
 
@@ -90,7 +90,7 @@ mod tests {
         let source = r#"print "A~¶Þॐஃ";"#.to_string();
         let mut vm = VM::init();
         vm.interpret(source)?;
-        assert_eq!(vm.latest_printed_value.to_string(), "A~¶Þॐஃ".to_string());
+        assert_eq!(vm.printed_values.pop().unwrap().to_string(), "A~¶Þॐஃ".to_string());
         Ok(())
     }
 
@@ -99,7 +99,7 @@ mod tests {
         let source = r#"print "(" + "" + ")";"#.to_string();
         let mut vm = VM::init();
         vm.interpret(source)?;
-        assert_eq!(vm.latest_printed_value.to_string(), "()".to_string());
+        assert_eq!(vm.printed_values.pop().unwrap().to_string(), "()".to_string());
         Ok(())
     }
 
@@ -114,7 +114,7 @@ print breakfast;"#
         let mut vm = VM::init();
         vm.interpret(source)?;
         assert_eq!(
-            vm.latest_printed_value.to_string(),
+            vm.printed_values.pop().unwrap().to_string(),
             "beignets with cafe au lait".to_string()
         );
         Ok(())
@@ -130,27 +130,102 @@ print a;"#
             .to_string();
         let mut vm = VM::init();
         vm.interpret(source)?;
-        assert_eq!(vm.latest_printed_value.to_string(), "1\n2\n3".to_string());
+        assert_eq!(vm.printed_values.pop().unwrap().to_string(), "1\n2\n3".to_string());
         Ok(())
     }
 
-    #[test]
-    fn undefined_global() -> VMResult {
-        let source = r#"print notDefined;"#
+    mod variable {
+        use super::*;
+
+        #[ignore = "unimplemented - function"]
+        #[test]
+        fn collide_with_parameter() -> VMResult {
+            let source = r#"
+fun foo(a) {
+    var a;
+}"#
             .to_string();
-        let mut vm = VM::init();
-        let res = vm.interpret(source);
-        assert_eq!(Err(VMError::RuntimeError), res);
-        assert_eq!(
-            "Undefined variable 'notDefined'.",
-            vm.latest_error_message
-        );
-        Ok(())
+            let mut vm = VM::init();
+            let res = vm.interpret(source);
+            assert_eq!(Err(VMError::CompileError), res);
+            assert_eq!(
+                "Already variable with this name in this scope.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn duplicate_local() -> VMResult {
+            let source = r#"
+{
+    var a = "value";
+    var a = "other";
+}"#
+            .to_string();
+            let mut vm = VM::init();
+            let res = vm.interpret(source);
+            assert_eq!(Err(VMError::CompileError), res);
+            assert_eq!(
+                "Already variable with this name in this scope.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+
+        #[ignore = "unimplemented - function"]
+        #[test]
+        fn duplicate_parameter() -> VMResult {
+            let source = r#"
+fun foo(arg, arg) {
+    "body";
+}"#
+            .to_string();
+            let mut vm = VM::init();
+            let res = vm.interpret(source);
+            assert_eq!(Err(VMError::CompileError), res);
+            assert_eq!(
+                "Already variable with this name in this scope.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+
+        #[ignore = "unimplemented - function"]
+        #[test]
+        fn early_bound() -> VMResult {
+            let source = r#"
+var a = "outer";
+{
+    fun foo() {
+        print a;
     }
 
-    #[test]
-    fn variable_scopes() -> VMResult {
-        let source = r#"
+    foo(); // expect: outer
+    var a = "inner";
+    foo(); // expect: outer
+}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(vm.printed_values.pop().unwrap().to_string(), "outer".to_string());
+            Ok(())
+        }
+
+        #[test]
+        fn undefined_global() -> VMResult {
+            let source = r#"print notDefined;"#.to_string();
+            let mut vm = VM::init();
+            let res = vm.interpret(source);
+            assert_eq!(Err(VMError::RuntimeError), res);
+            assert_eq!("Undefined variable 'notDefined'.", vm.latest_error_message);
+            Ok(())
+        }
+
+        #[test]
+        fn variable_scopes() -> VMResult {
+            let source = r#"
 {
     var a = "outer";
     {
@@ -158,16 +233,16 @@ print a;"#
     }
     print a;
 }"#
-        .to_string();
-        let mut vm = VM::init();
-        vm.interpret(source)?;
-        assert_eq!(vm.latest_printed_value.to_string(), "outer".to_string());
-        Ok(())
-    }
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(vm.printed_values.pop().unwrap().to_string(), "outer".to_string());
+            Ok(())
+        }
 
-    #[test]
-    fn variable_scopes_shadow_outer_local() -> VMResult {
-        let source = r#"
+        #[test]
+        fn variable_scopes_shadow_outer_local() -> VMResult {
+            let source = r#"
 {
     var a = "outer";
     {
@@ -175,58 +250,44 @@ print a;"#
         print a;
     }
 }"#
-        .to_string();
-        let mut vm = VM::init();
-        vm.interpret(source)?;
-        assert_eq!(vm.latest_printed_value.to_string(), "inner".to_string());
-        Ok(())
-    }
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(vm.printed_values.pop().unwrap().to_string(), "inner".to_string());
+            Ok(())
+        }
 
-    #[test]
-    fn variable_scopes_shadow_global() -> VMResult {
-        let source = r#"
+        #[test]
+        fn variable_scopes_shadow_global() -> VMResult {
+            let source = r#"
 var a = "global";
 {
     var a = "shadow";
 }
 print a;"#
-            .to_string();
-        let mut vm = VM::init();
-        vm.interpret(source)?;
-        assert_eq!(vm.latest_printed_value.to_string(), "global".to_string());
-        Ok(())
-    }
+                .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(vm.printed_values.pop().unwrap().to_string(), "global".to_string());
+            Ok(())
+        }
 
-    #[test]
-    fn variable_scopes_shadow_global_1() -> VMResult {
-        let source = r#"
+        #[test]
+        fn variable_scopes_shadow_global_1() -> VMResult {
+            let source = r#"
 var a = "global";
 {
     var a = "shadow";
     print a;
 }"#
-        .to_string();
-        let mut vm = VM::init();
-        vm.interpret(source)?;
-        assert_eq!(vm.latest_printed_value.to_string(), "shadow".to_string());
-        Ok(())
-    }
-
-    #[test]
-    fn duplicate_local() -> VMResult {
-        let source = r#"
-{
-    var a = "value";
-    var a = "other";
-}"#
-        .to_string();
-        let mut vm = VM::init();
-        let res = vm.interpret(source);
-        assert_eq!(Err(VMError::CompileError), res);
-        assert_eq!(
-            "Already variable with this name in this scope.",
-            vm.latest_error_message
-        );
-        Ok(())
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                vm.printed_values.pop().unwrap().to_string(),
+                "shadow".to_string()
+            );
+            Ok(())
+        }
     }
 }
