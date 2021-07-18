@@ -354,6 +354,14 @@ mod tests {
     }
 
     #[test]
+    fn scan_unterminated_string() {
+        let source = "\"asda".chars().collect();
+        let mut sc = Scanner::init(source);
+        let t = sc.scan_token();
+        assert_eq!(TokenType::Error(ScannerError::UnterminatedString), t.token_type);
+    }
+
+    #[test]
     fn scan_identifier() {
         let source = "asda".chars().collect();
         let mut sc = Scanner::init(source);
