@@ -79,7 +79,8 @@ pub struct Token {
 }
 
 impl Scanner {
-    pub fn init(source: Vec<char>) -> Scanner {
+    pub fn init(mut source: Vec<char>) -> Scanner {
+        source.push('\0');
         Scanner {
             source,
             start: 0,
@@ -210,7 +211,8 @@ impl Scanner {
     }
 
     fn is_at_end(&self) -> bool {
-        self.source.len() == self.current
+        // self.source.len() == self.current
+        self.source[self.current] == '\0'
     }
 
     fn string(&mut self) -> Token {
