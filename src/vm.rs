@@ -20,10 +20,15 @@ pub struct VM {
     stack_top: usize,
     /// All global variables.
     globals: HashMap<String, Value>,
+
+    /// Only for testing. Holds the last value printed by the print statement,
+    /// so that it can be compared to the expected output in the tests.
+    pub latest_printed_value: Value,
 }
 
 pub type VMResult = Result<(), VMError>;
 
+#[derive(Debug, Clone, Copy)]
 pub enum VMError {
     CompileError,
     RuntimeError,
@@ -37,6 +42,7 @@ impl VM {
             stack: [v; STACK_MAX],
             stack_top: 0,
             globals: HashMap::new(),
+            latest_printed_value: Value::Nil,
         }
     }
 
@@ -182,7 +188,14 @@ impl VM {
                 Instruction::OpPop => {
                     self.pop_from_stack();
                 }
-                Instruction::OpPrint => print!("{}", self.pop_from_stack()),
+                // Instruction::OpPrint => print!("{}", self.pop_from_stack()),
+                Instruction::OpPrint => {
+                    let v = self.pop_from_stack();
+                    // TODO: conditional execution only for tests
+                    self.latest_printed_value = v.clone();
+                    //
+                    print!("{}", v);
+                }
                 Instruction::OpReturn => {
                     // let return_val = self.pop_from_stack();
                     // println!("{:?}", return_val);
