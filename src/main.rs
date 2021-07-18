@@ -90,7 +90,10 @@ mod tests {
         let source = r#"print "A~¶Þॐஃ";"#.to_string();
         let mut vm = VM::init();
         vm.interpret(source)?;
-        assert_eq!(vm.printed_values.pop().unwrap().to_string(), "A~¶Þॐஃ".to_string());
+        assert_eq!(
+            vm.printed_values.pop().unwrap().to_string(),
+            "A~¶Þॐஃ".to_string()
+        );
         Ok(())
     }
 
@@ -99,7 +102,10 @@ mod tests {
         let source = r#"print "(" + "" + ")";"#.to_string();
         let mut vm = VM::init();
         vm.interpret(source)?;
-        assert_eq!(vm.printed_values.pop().unwrap().to_string(), "()".to_string());
+        assert_eq!(
+            vm.printed_values.pop().unwrap().to_string(),
+            "()".to_string()
+        );
         Ok(())
     }
 
@@ -130,7 +136,10 @@ print a;"#
             .to_string();
         let mut vm = VM::init();
         vm.interpret(source)?;
-        assert_eq!(vm.printed_values.pop().unwrap().to_string(), "1\n2\n3".to_string());
+        assert_eq!(
+            vm.printed_values.pop().unwrap().to_string(),
+            "1\n2\n3".to_string()
+        );
         Ok(())
     }
 
@@ -209,7 +218,65 @@ var a = "outer";
             .to_string();
             let mut vm = VM::init();
             vm.interpret(source)?;
-            assert_eq!(vm.printed_values.pop().unwrap().to_string(), "outer".to_string());
+            assert_eq!(
+                vm.printed_values.pop().unwrap().to_string(),
+                "outer".to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn in_middle_of_block() -> VMResult {
+            let source = r#"
+{
+    var a = "a";
+    print a;
+    var b = a + " b";
+    print b;
+    var c = a + " c";
+    print c;
+    var d = b + " d";
+    print d;
+}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                vm.printed_values.pop().unwrap().to_string(),
+                "a b d".to_string()
+            );
+            assert_eq!(
+                vm.printed_values.pop().unwrap().to_string(),
+                "a c".to_string()
+            );
+            assert_eq!(
+                vm.printed_values.pop().unwrap().to_string(),
+                "a b".to_string()
+            );
+            assert_eq!(
+                vm.printed_values.pop().unwrap().to_string(),
+                "a".to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn in_nested_block() -> VMResult {
+            let source = r#"
+{
+    var a = "outer";
+    {
+        print a;
+    }
+}"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                vm.printed_values.pop().unwrap().to_string(),
+                "outer".to_string()
+            );
             Ok(())
         }
 
@@ -220,23 +287,6 @@ var a = "outer";
             let res = vm.interpret(source);
             assert_eq!(Err(VMError::RuntimeError), res);
             assert_eq!("Undefined variable 'notDefined'.", vm.latest_error_message);
-            Ok(())
-        }
-
-        #[test]
-        fn variable_scopes() -> VMResult {
-            let source = r#"
-{
-    var a = "outer";
-    {
-        var a = "inner";
-    }
-    print a;
-}"#
-            .to_string();
-            let mut vm = VM::init();
-            vm.interpret(source)?;
-            assert_eq!(vm.printed_values.pop().unwrap().to_string(), "outer".to_string());
             Ok(())
         }
 
@@ -253,7 +303,10 @@ var a = "outer";
             .to_string();
             let mut vm = VM::init();
             vm.interpret(source)?;
-            assert_eq!(vm.printed_values.pop().unwrap().to_string(), "inner".to_string());
+            assert_eq!(
+                vm.printed_values.pop().unwrap().to_string(),
+                "inner".to_string()
+            );
             Ok(())
         }
 
@@ -268,7 +321,10 @@ print a;"#
                 .to_string();
             let mut vm = VM::init();
             vm.interpret(source)?;
-            assert_eq!(vm.printed_values.pop().unwrap().to_string(), "global".to_string());
+            assert_eq!(
+                vm.printed_values.pop().unwrap().to_string(),
+                "global".to_string()
+            );
             Ok(())
         }
 
