@@ -60,3 +60,28 @@ fn run_file(path: String) {
         _ => {}
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::value::Value;
+
+    use super::*;
+
+    #[test]
+    fn arithmetic_expression() -> VMResult {
+        let source = "print (5 - (3 - 1)) + -1;".to_string();
+        let mut vm = VM::init();
+        vm.interpret(source)?;
+        assert_eq!(vm.latest_printed_value, Value::Number(2f64));
+        Ok(())
+    }
+
+    #[test]
+    fn boolean_expression() -> VMResult {
+        let source = "print !(5 - 4 > 3 * 2 == !nil);".to_string();
+        let mut vm = VM::init();
+        vm.interpret(source)?;
+        assert_eq!(vm.latest_printed_value, Value::Boolean(true));
+        Ok(())
+    }
+}

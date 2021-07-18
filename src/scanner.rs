@@ -1,11 +1,15 @@
 pub struct Scanner {
+    /// The source input, as a [Vec] of [char]s.
     pub source: Vec<char>,
+    /// The index in the source of the first character of the token currently being scanned.
     pub start: usize,
+    /// The index in the source of the character currently being scanned.
     pub current: usize,
+    /// The number of the line currently being scanned.
     pub line: i32,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,
@@ -57,7 +61,7 @@ pub enum TokenType {
     Eof,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ScannerError {
     UnexpectedCharacter,
     UnterminatedString,
@@ -70,6 +74,7 @@ pub struct Token {
     /// The token's start index in the source string.
     pub start: usize,
     pub length: i32,
+    /// The line in the source code where the [Token] is found.
     pub line: i32,
 }
 
@@ -288,7 +293,7 @@ impl Scanner {
         if (self.current - self.start) as i32 != start + length {
             return TokenType::Identifier;
         }
-        for (&c1, c2) in self.source[self.start + 1..self.current]
+        for (&c1, c2) in self.source[(self.start + start as usize)..self.current]
             .iter()
             .zip(rest.chars())
         {
@@ -307,4 +312,50 @@ fn is_digit(c: char) -> bool {
 
 fn is_alpha(c: char) -> bool {
     (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn scan_number() {
+        let source = "84".chars().collect();
+        let mut sc = Scanner::init(source);
+        let t = sc.scan_token();
+        assert_eq!(TokenType::Number, t.token_type);
+    }
+
+    #[test]
+    fn scan_true_keyword() {
+        let source = "true;".chars().collect();
+        let mut sc = Scanner::init(source);
+        let t = sc.scan_token();
+        assert_eq!(TokenType::True, t.token_type);
+    }
+
+    #[test]
+    fn scan_equal_equal() {
+        let source = "==".chars().collect();
+        let mut sc = Scanner::init(source);
+        let t = sc.scan_token();
+        assert_eq!(TokenType::EqualEqual, t.token_type);
+    }
+
+    #[test]
+    fn scan_string() {
+        let source = "\"asda\"".chars().collect();
+        let mut sc = Scanner::init(source);
+        let t = sc.scan_token();
+        assert_eq!(TokenType::String, t.token_type);
+    }
+
+    #[test]
+    fn scan_identifier() {
+        let source = "asda".chars().collect();
+        let mut sc = Scanner::init(source);
+        let t = sc.scan_token();
+        assert_eq!(TokenType::Identifier, t.token_type);
+    }
 }
