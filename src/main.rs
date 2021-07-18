@@ -64,9 +64,8 @@ fn run_file(path: String) {
 // TODO: move tests
 #[cfg(test)]
 mod tests {
-    use crate::value::Value;
-
     use super::*;
+    use crate::value::Value;
 
     #[test]
     fn arithmetic_expression() -> VMResult {

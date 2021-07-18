@@ -303,7 +303,6 @@ impl Scanner {
                 return TokenType::Identifier;
             }
         }
-
         token_type
     }
 }
@@ -318,7 +317,6 @@ fn is_alpha(c: char) -> bool {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]
@@ -358,7 +356,10 @@ mod tests {
         let source = "\"asda".chars().collect();
         let mut sc = Scanner::init(source);
         let t = sc.scan_token();
-        assert_eq!(TokenType::Error(ScannerError::UnterminatedString), t.token_type);
+        assert_eq!(
+            TokenType::Error(ScannerError::UnterminatedString),
+            t.token_type
+        );
     }
 
     #[test]
