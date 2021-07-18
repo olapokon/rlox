@@ -1,6 +1,7 @@
 use std::{fmt::Display, rc::Rc};
 
-#[derive(Debug, Clone)]
+// #[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Boolean(bool),
     Number(f64),
@@ -50,6 +51,7 @@ impl Value {
         }
     }
 
+    // TODO implement PartialEq for Value instead
     pub fn equals(v1: Value, v2: Value) -> bool {
         match v1 {
             Value::Boolean(b1) => match v2 {
@@ -60,7 +62,10 @@ impl Value {
                 Value::Number(n2) => n1 == n2,
                 _ => false,
             },
-            Value::Nil => true,
+            Value::Nil => match v2 {
+                Value::Nil => true,
+                _ => false,
+            },
             Value::String(s1) => match v2 {
                 Value::String(s2) => s1.eq(&s2),
                 _ => false,
