@@ -61,6 +61,7 @@ fn run_file(path: String) {
     }
 }
 
+// TODO: move tests
 #[cfg(test)]
 mod tests {
     use crate::value::Value;
@@ -82,6 +83,55 @@ mod tests {
         let mut vm = VM::init();
         vm.interpret(source)?;
         assert_eq!(vm.latest_printed_value, Value::Boolean(true));
+        Ok(())
+    }
+
+    #[test]
+    fn non_ascii_string() -> VMResult {
+        let source = r#"print "A~¶Þॐஃ";"#.to_string();
+        let mut vm = VM::init();
+        vm.interpret(source)?;
+        assert_eq!(vm.latest_printed_value.to_string(), "A~¶Þॐஃ".to_string());
+        Ok(())
+    }
+
+    #[test]
+    fn concatenate_strings() -> VMResult {
+        let source = r#"print "(" + "" + ")";"#.to_string();
+        let mut vm = VM::init();
+        vm.interpret(source)?;
+        assert_eq!(vm.latest_printed_value.to_string(), "()".to_string());
+        Ok(())
+    }
+
+    #[test]
+    fn concatenate_strings_with_variables() -> VMResult {
+        let source = r#"
+var breakfast = "beignets";
+var beverage = "cafe au lait";
+breakfast = "beignets with " + beverage;
+print breakfast;"#
+            .to_string();
+        let mut vm = VM::init();
+        vm.interpret(source)?;
+        assert_eq!(
+            vm.latest_printed_value.to_string(),
+            "beignets with cafe au lait".to_string()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn multiline_string() -> VMResult {
+        let source = r#"
+var a = "1
+2
+3";
+print a;"#
+            .to_string();
+        let mut vm = VM::init();
+        vm.interpret(source)?;
+        assert_eq!(vm.latest_printed_value.to_string(), "1\n2\n3".to_string());
         Ok(())
     }
 }
