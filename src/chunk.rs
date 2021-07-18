@@ -10,10 +10,12 @@ pub enum Instruction {
     OpEqual,
     OpFalse,
     OpGetGlobal(usize),
+    OpGetLocal(usize),
     OpGreater,
     OpLess,
     OpAdd,
     OpSetGlobal(usize),
+    OpSetLocal(usize),
     OpSubtract,
     OpMultiply,
     OpDivide,
@@ -89,7 +91,9 @@ impl Chunk {
             Instruction::OpConstant(idx)
             | Instruction::OpDefineGlobal(idx)
             | Instruction::OpGetGlobal(idx)
-            | Instruction::OpSetGlobal(idx) => {
+            | Instruction::OpSetGlobal(idx)
+            | Instruction::OpGetLocal(idx)
+            | Instruction::OpSetLocal(idx) => {
                 let constant = &self.constants[idx];
                 println!("{:?}    \tvalue: {:?}", instruction, constant);
             }

@@ -85,6 +85,16 @@ impl VM {
                         return Err(VMError::RuntimeError);
                     }
                 }
+                Instruction::OpGetLocal(stack_index) => {
+                    let v = self.stack[stack_index].take();
+                    self.stack[stack_index] = Cell::new(v.clone());
+                    self.push_to_stack(v);
+                }
+                Instruction::OpSetLocal(stack_index) => {
+                    let v = self.stack[self.stack_top - 1].take();
+                    self.stack[self.stack_top - 1] = Cell::new(v.clone());
+                    self.stack[stack_index] = Cell::new(v);
+                }
                 Instruction::OpGetGlobal(index) => {
                     if let Value::String(name) = chunk.read_constant(index) {
                         let val = self

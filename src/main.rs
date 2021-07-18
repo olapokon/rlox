@@ -133,4 +133,38 @@ print a;"#
         assert_eq!(vm.latest_printed_value.to_string(), "1\n2\n3".to_string());
         Ok(())
     }
+
+    #[test]
+    fn variable_scopes() -> VMResult {
+        let source = r#"
+{
+    var a = "outer";
+    {
+        var a = "inner";
+    }
+    print a;
+}"#
+            .to_string();
+        let mut vm = VM::init();
+        vm.interpret(source)?;
+        assert_eq!(vm.latest_printed_value.to_string(), "outer".to_string());
+        Ok(())
+    }
+
+    #[test]
+    fn variable_scopes_shadowing() -> VMResult {
+        let source = r#"
+{
+    var a = "outer";
+    {
+        var a = "inner";
+        print a;
+    }
+}"#
+            .to_string();
+        let mut vm = VM::init();
+        vm.interpret(source)?;
+        assert_eq!(vm.latest_printed_value.to_string(), "inner".to_string());
+        Ok(())
+    }
 }
