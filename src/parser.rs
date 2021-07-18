@@ -5,6 +5,7 @@ pub struct Parser {
     pub previous: Token,
     pub had_error: bool,
     pub panic_mode: bool,
+    pub error_message: String,
 }
 
 impl Parser {
@@ -20,6 +21,7 @@ impl Parser {
             previous: placeholder_token,
             had_error: false,
             panic_mode: false,
+            error_message: String::new(),
         }
     }
 }

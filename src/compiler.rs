@@ -72,7 +72,7 @@ pub struct Compiler {
 }
 
 impl Compiler {
-    pub fn compile(source: String) -> Result<Chunk, ()> {
+    pub fn compile(source: String) -> Result<Chunk, String> {
         let mut compiler = Compiler::init(source.chars().collect());
 
         compiler.advance();
@@ -84,7 +84,7 @@ impl Compiler {
         compiler.end();
 
         if compiler.parser.had_error {
-            Err(())
+            Err(compiler.parser.error_message)
         } else {
             Ok(compiler.current_chunk)
         }
@@ -158,8 +158,9 @@ impl Compiler {
             _ => eprint!(" at {:?}", self.lexeme_to_string(token)),
         }
 
-        eprintln!(": {}", message);
+        eprintln!(": {}", &message);
         self.parser.had_error = true;
+        self.parser.error_message = message.to_string();
     }
 
     fn consume(&mut self, token_type: TokenType, message: &str) {

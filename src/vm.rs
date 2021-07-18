@@ -24,11 +24,13 @@ pub struct VM {
     /// Only for testing. Holds the last value printed by the print statement,
     /// so that it can be compared to the expected output in the tests.
     pub latest_printed_value: Value,
+    /// Only for testing. Holds the latest error value
+    pub latest_error_message: String,
 }
 
 pub type VMResult = Result<(), VMError>;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum VMError {
     CompileError,
     RuntimeError,
@@ -43,13 +45,17 @@ impl VM {
             stack_top: 0,
             globals: HashMap::new(),
             latest_printed_value: Value::Nil,
+            latest_error_message: String::new(),
         }
     }
 
     pub fn interpret(&mut self, source: String) -> VMResult {
         let r = match Compiler::compile(source) {
             Ok(r) => r,
-            Err(_) => return Err(VMError::CompileError),
+            Err(error_message) => {
+                self.latest_error_message = error_message;
+                return Err(VMError::CompileError);
+            }
         };
         self.run(r)
     }
@@ -96,16 +102,22 @@ impl VM {
                     self.stack[stack_index] = Cell::new(v);
                 }
                 Instruction::OpGetGlobal(index) => {
+                    let mut v = None;
                     if let Value::String(name) = chunk.read_constant(index) {
-                        let val = self
-                            .globals
-                            .get(&name.to_string())
-                            .ok_or(VMError::RuntimeError)?
-                            .clone();
-                        self.push_to_stack(val);
+                        v = self.globals.get(&name.to_string());
+                        if v.is_none() {
+                            self.runtime_error(
+                                &chunk,
+                                &format!("Undefined variable '{}'.", &name),
+                                None,
+                                None,
+                            );
+                            return Err(VMError::RuntimeError);
+                        }
                     } else {
                         return Err(VMError::RuntimeError);
                     };
+                    self.push_to_stack(v.unwrap().clone());
                 }
                 Instruction::OpSetGlobal(index) => {
                     if let Value::String(name) = chunk.read_constant(index) {
@@ -115,8 +127,8 @@ impl VM {
                             self.globals.remove(&name.to_string());
                             self.runtime_error(
                                 &chunk,
-                                "Undefined variable {}",
-                                Some(&name.to_string()),
+                                &format!("Undefined variable {}", &name),
+                                None,
                                 None,
                             );
                             return Err(VMError::RuntimeError);
@@ -249,7 +261,8 @@ impl VM {
         arg1: Option<&str>,
         arg2: Option<&str>,
     ) {
-        eprint!("{}", message);
+        eprint!("{}", &message);
+        self.latest_error_message = message.to_string();
         if arg1.is_some() {
             eprint!(" {}", arg1.unwrap());
         }
