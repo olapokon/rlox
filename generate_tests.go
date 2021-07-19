@@ -85,7 +85,6 @@ func writeTest(outputFile *os.File, fileInfo *fs.FileInfo, moduleName string, in
 		writeLine(outputFile, "vm.latest_error_message", indentationLevel+2)
 		writeLine(outputFile, ");", indentationLevel+1)
 	}
-	// /test body
 
 	writeLine(outputFile, "Ok(())", indentationLevel+1)
 	writeLine(outputFile, "}", indentationLevel)
@@ -128,7 +127,14 @@ func writeToFile(files []fs.FileInfo) {
 
 		// If it is a directory, create a new test module for its tests.
 		// if name == "benchmark" || name == "regression" {
-		if name != "assignment" {
+		if name != "assignment" &&
+			name != "block" &&
+			name != "bool" &&
+			name != "comments" &&
+			// name != "expressions" &&
+			// name != "operator" &&
+			name != "print" &&
+			name != "string" {
 			// Directories to exclude.
 			continue
 		}
