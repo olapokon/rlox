@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -23,13 +24,10 @@ func writeTest(outputFile *os.File, fileInfo *fs.FileInfo, moduleName string, in
 	}
 	name := strings.Replace((*fileInfo).Name(), ".lox", "", 1)
 
-	// fmt.Println(name)
-
 	outputFile.WriteString("\n")
 	writeLine(outputFile, "#[test]", indentationLevel)
 	writeLine(outputFile, fmt.Sprintf("fn %s() -> VMResult {", name), indentationLevel)
 
-	// TODO: move to separate function.
 	// Write test body.
 	var path string
 	if len(moduleName) > 0 {
@@ -42,17 +40,54 @@ func writeTest(outputFile *os.File, fileInfo *fs.FileInfo, moduleName string, in
 		log.Fatal(err)
 	}
 	defer f.Close()
-	fmt.Printf("******************************************************\n")
-	fmt.Printf("opened file with name: %s\n", f.Name())
-	fmt.Printf("******************************************************\n")
 	sc := bufio.NewScanner(f)
+
+	writeLine(outputFile, "let source = r#\"", indentationLevel+1)
+	assertError := ""
+	assertValues := make([]string, 0)
 	for sc.Scan() {
 		line := sc.Text()
-		fmt.Println(line)
+		writeLine(outputFile, line, 0)
+
+		// There may be edge cases, error comment not always consistent?
+		matchError, _ := regexp.MatchString("(?i)error", line)
+		// There is at least one test file where there are two error comments,
+		// the second error is for Java (unexpected_character.lox)
+		if matchError && len(assertError) == 0 {
+			assertError = strings.SplitAfter(line, ": ")[1]
+		}
+		matchExpect, _ := regexp.MatchString("// expect: ", line)
+		if matchExpect {
+			assertValues = append(assertValues, strings.SplitAfter(line, ": ")[1])
+		}
 	}
-	fmt.Printf("******************************************************\n\n")
+	writeLine(outputFile, "\"#", 0)
+	writeLine(outputFile, ".to_string();", indentationLevel+1)
+	writeLine(outputFile, "let mut vm = VM::init();", indentationLevel+1)
+
+	if len(assertValues) > 0 {
+		// This test expects certain values to be printed.
+		writeLine(outputFile, "vm.interpret(source)?;", indentationLevel+1)
+
+		// Write one assertion for each expected value.
+		for i := len(assertValues) - 1; i >= 0; i-- {
+			writeLine(outputFile, "assert_eq!(", indentationLevel+1)
+			writeLine(outputFile, fmt.Sprintf("\"%s\".to_string(),", assertValues[i]), indentationLevel+2)
+			writeLine(outputFile, "vm.printed_values.pop().unwrap().to_string()", indentationLevel+2)
+			writeLine(outputFile, ");", indentationLevel+1)
+		}
+
+	} else if len(assertError) > 0 {
+		// This test expects a specific error.
+		writeLine(outputFile, "vm.interpret(source);", indentationLevel+1)
+		writeLine(outputFile, "assert_eq!(", indentationLevel+1)
+		writeLine(outputFile, fmt.Sprintf("\"%s\",", assertError), indentationLevel+2)
+		writeLine(outputFile, "vm.latest_error_message", indentationLevel+2)
+		writeLine(outputFile, ");", indentationLevel+1)
+	}
 	// /test body
 
+	writeLine(outputFile, "Ok(())", indentationLevel+1)
 	writeLine(outputFile, "}", indentationLevel)
 }
 
@@ -62,7 +97,6 @@ func writeModule(outputFile *os.File, moduleName string, modFilesInfo []fs.FileI
 	writeLine(outputFile, "use super::*;", indentationLevel+1)
 
 	for _, tf := range modFilesInfo {
-		// fmt.Println(moduleName + "/" + tf.Name())
 		writeTest(outputFile, &tf, moduleName, indentationLevel+1)
 	}
 
@@ -84,7 +118,6 @@ func writeToFile(files []fs.FileInfo) {
 	writeLine(f, "use crate::value::Value;", 1)
 
 	for _, fileInfo := range files {
-		// fmt.Printf("%s, isDir: %v\n", fileInfo.Name(), fileInfo.IsDir())
 		name := fileInfo.Name()
 
 		if !fileInfo.IsDir() {
@@ -115,7 +148,5 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// scanner := bufio.NewScanner(f)
-	// posts := parsePosts(scanner)
 	writeToFile(files)
 }
