@@ -10,7 +10,6 @@ import (
 )
 
 const OUTPUT_FILE = "./tests.rs"
-
 const INPUT_DIRECTORY = "./test/"
 
 func writeLine(outputFile *os.File, text string, indentationLevel int) {
@@ -18,7 +17,11 @@ func writeLine(outputFile *os.File, text string, indentationLevel int) {
 }
 
 func writeTest(outputFile *os.File, fileInfo *fs.FileInfo, indentationLevel int) {
-	name := (*fileInfo).Name()
+	if !strings.HasSuffix((*fileInfo).Name(), ".lox") {
+		log.Fatal("Invalid file input. Only .lox files should be present in the input directory.")
+	}
+	name := strings.Replace((*fileInfo).Name(), ".lox", "", 1)
+
 	fmt.Println(name)
 
 	outputFile.WriteString("\n")
@@ -35,6 +38,7 @@ func writeModule(outputFile *os.File, moduleName string, moduleTestFiles []fs.Fi
 
 	for _, tf := range moduleTestFiles {
 		fmt.Println(moduleName + "/" + tf.Name())
+		writeTest(outputFile, &tf, indentationLevel+1)
 	}
 
 	// Closing bracket for the module.
