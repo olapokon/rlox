@@ -127,7 +127,7 @@ impl VM {
                             self.globals.remove(&name.to_string());
                             self.runtime_error(
                                 &chunk,
-                                &format!("Undefined variable {}", &name),
+                                &format!("Undefined variable '{}'.", &name),
                                 None,
                                 None,
                             );
