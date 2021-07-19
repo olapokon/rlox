@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
@@ -16,29 +17,53 @@ func writeLine(outputFile *os.File, text string, indentationLevel int) {
 	outputFile.WriteString(fmt.Sprintf("%s%s\n", strings.Repeat("    ", indentationLevel), text))
 }
 
-func writeTest(outputFile *os.File, fileInfo *fs.FileInfo, indentationLevel int) {
+func writeTest(outputFile *os.File, fileInfo *fs.FileInfo, moduleName string, indentationLevel int) {
 	if !strings.HasSuffix((*fileInfo).Name(), ".lox") {
 		log.Fatal("Invalid file input. Only .lox files should be present in the input directory.")
 	}
 	name := strings.Replace((*fileInfo).Name(), ".lox", "", 1)
 
-	fmt.Println(name)
+	// fmt.Println(name)
 
 	outputFile.WriteString("\n")
 	writeLine(outputFile, "#[test]", indentationLevel)
 	writeLine(outputFile, fmt.Sprintf("fn %s() -> VMResult {", name), indentationLevel)
 
+	// TODO: move to separate function.
+	// Write test body.
+	var path string
+	if len(moduleName) > 0 {
+		path = INPUT_DIRECTORY + moduleName + "/" + (*fileInfo).Name()
+	} else {
+		path = INPUT_DIRECTORY + (*fileInfo).Name()
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	fmt.Printf("******************************************************\n")
+	fmt.Printf("opened file with name: %s\n", f.Name())
+	fmt.Printf("******************************************************\n")
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		line := sc.Text()
+		fmt.Println(line)
+	}
+	fmt.Printf("******************************************************\n\n")
+	// /test body
+
 	writeLine(outputFile, "}", indentationLevel)
 }
 
-func writeModule(outputFile *os.File, moduleName string, moduleTestFiles []fs.FileInfo, indentationLevel int) {
+func writeModule(outputFile *os.File, moduleName string, modFilesInfo []fs.FileInfo, indentationLevel int) {
 	outputFile.WriteString("\n")
 	writeLine(outputFile, fmt.Sprintf("mod %s {", moduleName), indentationLevel)
 	writeLine(outputFile, "use super::*;", indentationLevel+1)
 
-	for _, tf := range moduleTestFiles {
-		fmt.Println(moduleName + "/" + tf.Name())
-		writeTest(outputFile, &tf, indentationLevel+1)
+	for _, tf := range modFilesInfo {
+		// fmt.Println(moduleName + "/" + tf.Name())
+		writeTest(outputFile, &tf, moduleName, indentationLevel+1)
 	}
 
 	// Closing bracket for the module.
@@ -64,13 +89,14 @@ func writeToFile(files []fs.FileInfo) {
 
 		if !fileInfo.IsDir() {
 			// If it is a file, write the test in the top level module.
-			writeTest(f, &fileInfo, 1)
+			writeTest(f, &fileInfo, "", 1)
 			continue
 		}
 
 		// If it is a directory, create a new test module for its tests.
-		if name == "benchmark" {
-			// Exclude "benchmark" directory.
+		// if name == "benchmark" || name == "regression" {
+		if name != "assignment" {
+			// Directories to exclude.
 			continue
 		}
 		modTestFilesInfo, err := ioutil.ReadDir(INPUT_DIRECTORY + name)
