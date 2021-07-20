@@ -362,6 +362,8 @@ impl Compiler {
         self.emit_instruction(Instruction::OpDefineGlobal(global));
     }
 
+    /// Change the depth of the [Local] from -1 to the correct depth,
+    /// indicating the declaration statement has ended and the variable can now be used.
     fn mark_initialized(&mut self) {
         let i = self.locals.len() - 1;
         self.locals[i].depth = self.scope_depth;
@@ -482,6 +484,7 @@ impl Compiler {
         }
     }
 
+    /// Returns the index of the local variable in the locals vector.
     fn resolve_local(&mut self, name: Token) -> i32 {
         // let mut err = false;
         let mut idx: i32 = -1;
