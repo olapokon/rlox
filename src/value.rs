@@ -87,7 +87,7 @@ impl Display for Value {
         match self {
             Value::Boolean(b) => write!(f, "{}", b),
             Value::Number(n) => write!(f, "{}", n),
-            Value::Nil => write!(f, "{}", "NIL"),
+            Value::Nil => write!(f, "{}", "nil"),
             Value::String(s) => write!(f, "{}", s),
         }
     }

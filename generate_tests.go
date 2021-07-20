@@ -127,14 +127,7 @@ func writeToFile(files []fs.FileInfo) {
 
 		// If it is a directory, create a new test module for its tests.
 		// if name == "benchmark" || name == "regression" {
-		if name != "assignment" &&
-			name != "block" &&
-			name != "bool" &&
-			name != "comments" &&
-			// name != "expressions" &&
-			// name != "operator" &&
-			name != "print" &&
-			name != "string" {
+		if name != "variable" {
 			// Directories to exclude.
 			continue
 		}

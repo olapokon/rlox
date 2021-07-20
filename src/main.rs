@@ -702,6 +702,7 @@ print "A~¶Þॐஃ"; // expect: A~¶Þॐஃ
             Ok(())
         }
 
+        #[ignore = "refactor or remove"]
         #[test]
         fn multiline() -> VMResult {
             let source = r#"
@@ -742,6 +743,462 @@ print a;
             vm.interpret(source);
             assert_eq!(
                 "Unterminated string.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+    }
+
+    mod variable {
+        use super::*;
+
+        #[ignore = "function"]
+        #[test]
+        fn collide_with_parameter() -> VMResult {
+            let source = r#"
+fun foo(a) {
+  var a; // Error at 'a': Already variable with this name in this scope.
+}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source);
+            assert_eq!(
+                "Already variable with this name in this scope.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn duplicate_local() -> VMResult {
+            let source = r#"
+{
+  var a = "value";
+  var a = "other"; // Error at 'a': Already variable with this name in this scope.
+}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source);
+            assert_eq!(
+                "Already variable with this name in this scope.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+
+        #[ignore = "function"]
+        #[test]
+        fn duplicate_parameter() -> VMResult {
+            let source = r#"
+fun foo(arg,
+        arg) { // Error at 'arg': Already variable with this name in this scope.
+  "body";
+}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source);
+            assert_eq!(
+                "Already variable with this name in this scope.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+
+        #[ignore = "function"]
+        #[test]
+        fn early_bound() -> VMResult {
+            let source = r#"
+var a = "outer";
+{
+  fun foo() {
+    print a;
+  }
+
+  foo(); // expect: outer
+  var a = "inner";
+  foo(); // expect: outer
+}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "outer".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "outer".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn in_middle_of_block() -> VMResult {
+            let source = r#"
+{
+  var a = "a";
+  print a; // expect: a
+  var b = a + " b";
+  print b; // expect: a b
+  var c = a + " c";
+  print c; // expect: a c
+  var d = b + " d";
+  print d; // expect: a b d
+}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "a b d".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "a c".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "a b".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "a".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn in_nested_block() -> VMResult {
+            let source = r#"
+{
+  var a = "outer";
+  {
+    print a; // expect: outer
+  }
+}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "outer".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[ignore = "class"]
+        #[test]
+        fn local_from_method() -> VMResult {
+            let source = r#"
+var foo = "variable";
+
+class Foo {
+  method() {
+    print foo;
+  }
+}
+
+Foo().method(); // expect: variable
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "variable".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn redeclare_global() -> VMResult {
+            let source = r#"
+var a = "1";
+var a;
+print a; // expect: nil
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "nil".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn redefine_global() -> VMResult {
+            let source = r#"
+var a = "1";
+var a = "2";
+print a; // expect: 2
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "2".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn scope_reuse_in_different_blocks() -> VMResult {
+            let source = r#"
+{
+  var a = "first";
+  print a; // expect: first
+}
+
+{
+  var a = "second";
+  print a; // expect: second
+}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "second".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "first".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn shadow_and_local() -> VMResult {
+            let source = r#"
+{
+  var a = "outer";
+  {
+    print a; // expect: outer
+    var a = "inner";
+    print a; // expect: inner
+  }
+}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "inner".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "outer".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn shadow_global() -> VMResult {
+            let source = r#"
+var a = "global";
+{
+  var a = "shadow";
+  print a; // expect: shadow
+}
+print a; // expect: global
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "global".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "shadow".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn shadow_local() -> VMResult {
+            let source = r#"
+{
+  var a = "local";
+  {
+    var a = "shadow";
+    print a; // expect: shadow
+  }
+  print a; // expect: local
+}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "local".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "shadow".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn undefined_global() -> VMResult {
+            let source = r#"
+print notDefined;  // expect runtime error: Undefined variable 'notDefined'.
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source);
+            assert_eq!(
+                "Undefined variable 'notDefined'.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn undefined_local() -> VMResult {
+            let source = r#"
+{
+  print notDefined;  // expect runtime error: Undefined variable 'notDefined'.
+}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source);
+            assert_eq!(
+                "Undefined variable 'notDefined'.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn uninitialized() -> VMResult {
+            let source = r#"
+var a;
+print a; // expect: nil
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "nil".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[ignore = "if"]
+        #[test]
+        fn unreached_undefined() -> VMResult {
+            let source = r#"
+if (false) {
+  print notDefined;
+}
+
+print "ok"; // expect: ok
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "ok".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn use_false_as_var() -> VMResult {
+            let source = r#"
+// [line 2] Error at 'false': Expect variable name.
+var false = "value";
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source);
+            assert_eq!(
+                "Expect variable name.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn use_global_in_initializer() -> VMResult {
+            let source = r#"
+var a = "value";
+var a = a;
+print a; // expect: value
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "value".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn use_local_in_initializer() -> VMResult {
+            let source = r#"
+var a = "outer";
+{
+  var a = a; // Error at 'a': Can't read local variable in its own initializer.
+}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source);
+            assert_eq!(
+                "Can't read local variable in its own initializer.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn use_nil_as_var() -> VMResult {
+            let source = r#"
+// [line 2] Error at 'nil': Expect variable name.
+var nil = "value";
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source);
+            assert_eq!(
+                "Expect variable name.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn use_this_as_var() -> VMResult {
+            let source = r#"
+// [line 2] Error at 'this': Expect variable name.
+var this = "value";
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source);
+            assert_eq!(
+                "Expect variable name.",
                 vm.latest_error_message
             );
             Ok(())
