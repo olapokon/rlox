@@ -3,18 +3,25 @@ use crate::value::Value;
 /// The set of the VM's instruction codes.
 #[derive(Debug, Clone, Copy)]
 pub enum Instruction {
+    /// The index of the constant in the [Chunk]'s constants array.
     OpConstant(usize),
     OpNil,
     OpTrue,
+    /// The index of the variable name in the [Chunk]'s constants array.
     OpDefineGlobal(usize),
     OpEqual,
     OpFalse,
+    /// The index of the variable name in the [Chunk]'s constants array.
     OpGetGlobal(usize),
+    /// The index of the variable in the [Compiler]'s locals array.
     OpGetLocal(usize),
     OpGreater,
+    OpJumpIfFalse,
     OpLess,
     OpAdd,
+    /// The index of the variable name in the [Chunk]'s constants array.
     OpSetGlobal(usize),
+    /// The index of the variable in the [Compiler]'s locals array.
     OpSetLocal(usize),
     OpSubtract,
     OpMultiply,
