@@ -64,7 +64,6 @@ fn run_file(path: String) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::value::Value;
 
     mod expressions {
         use super::*;

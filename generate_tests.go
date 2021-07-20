@@ -115,7 +115,6 @@ func writeToFile(files []fs.FileInfo) {
 	writeLine(f, "#[cfg(test)]", 0)
 	writeLine(f, "mod tests {", 0)
 	writeLine(f, "use super::*;", 1)
-	writeLine(f, "use crate::value::Value;", 1)
 
 	for _, fileInfo := range files {
 		name := fileInfo.Name()
