@@ -47,6 +47,7 @@ struct ParseRule {
     precedence: Precedence,
 }
 
+/// A local variable.
 #[derive(Clone, Copy)]
 struct Local {
     /// The variable's name.
@@ -383,7 +384,13 @@ impl Compiler {
         if t_1.length != t_2.length {
             return false;
         }
-        self.lexeme_to_string(t_1) == self.lexeme_to_string(t_2)
+        for i in 0..t_1.length {
+            let i = i as usize;
+            if self.scanner.source[t_1.start + i] != self.scanner.source[t_2.start + i] {
+                return false;
+            }
+        }
+        return true;
     }
 
     fn synchronize(&mut self) {
@@ -487,7 +494,7 @@ impl Compiler {
                 break;
             }
         }
-        return idx; 
+        return idx;
     }
 
     fn grouping(&mut self) {
