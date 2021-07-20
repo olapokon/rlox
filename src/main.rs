@@ -61,6 +61,7 @@ fn run_file(path: String) {
         _ => {}
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -102,9 +102,9 @@ impl VM {
                     self.stack[stack_index] = Cell::new(v);
                 }
                 Instruction::OpGetGlobal(index) => {
-                    let mut v = None;
+                    // let mut v = None;
                     if let Value::String(name) = chunk.read_constant(index) {
-                        v = self.globals.get(&name.to_string());
+                        let v = self.globals.get(&name.to_string());
                         if v.is_none() {
                             self.runtime_error(
                                 &chunk,
@@ -114,10 +114,11 @@ impl VM {
                             );
                             return Err(VMError::RuntimeError);
                         }
+                        let v = v.unwrap().clone();
+                        self.push_to_stack(v);
                     } else {
                         return Err(VMError::RuntimeError);
                     };
-                    self.push_to_stack(v.unwrap().clone());
                 }
                 Instruction::OpSetGlobal(index) => {
                     if let Value::String(name) = chunk.read_constant(index) {
