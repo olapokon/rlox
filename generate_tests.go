@@ -121,13 +121,13 @@ func writeToFile(files []fs.FileInfo) {
 
 		if !fileInfo.IsDir() {
 			// If it is a file, write the test in the top level module.
-			writeTest(f, &fileInfo, "", 1)
+			// writeTest(f, &fileInfo, "", 1)
 			continue
 		}
 
 		// If it is a directory, create a new test module for its tests.
 		// if name == "benchmark" || name == "regression" {
-		if name != "variable" {
+		if name != "logical_operator" {
 			// Directories to exclude.
 			continue
 		}
