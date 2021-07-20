@@ -79,7 +79,8 @@ func writeTest(outputFile *os.File, fileInfo *fs.FileInfo, moduleName string, in
 
 	} else if len(assertError) > 0 {
 		// This test expects a specific error.
-		writeLine(outputFile, "vm.interpret(source);", indentationLevel+1)
+		writeLine(outputFile, "#[allow(unused_must_use)]", indentationLevel+1)
+		writeLine(outputFile, "{ vm.interpret(source); }", indentationLevel+1)
 		writeLine(outputFile, "assert_eq!(", indentationLevel+1)
 		writeLine(outputFile, fmt.Sprintf("\"%s\",", assertError), indentationLevel+2)
 		writeLine(outputFile, "vm.latest_error_message", indentationLevel+2)
@@ -127,7 +128,7 @@ func writeToFile(files []fs.FileInfo) {
 
 		// If it is a directory, create a new test module for its tests.
 		// if name == "benchmark" || name == "regression" {
-		if name != "logical_operator" {
+		if name != "expressions" {
 			// Directories to exclude.
 			continue
 		}

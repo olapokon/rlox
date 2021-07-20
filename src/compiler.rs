@@ -52,6 +52,8 @@ struct Local {
     /// The variable's name.
     name: Token,
     /// The scope depth of the block where the local variable was declared.
+    ///
+    /// A depth of -1 indicates that the variable has not been initialized.
     depth: i32,
 }
 

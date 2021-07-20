@@ -37,7 +37,8 @@ fn repl() {
             .expect("Failed to read input");
 
         let mut vm = VM::init();
-        vm.interpret(user_input.clone());
+        #[allow(unused_must_use)]
+        { vm.interpret(user_input.clone()); }
         user_input.clear();
     }
 }
@@ -141,7 +142,8 @@ var a = "a";
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Invalid assignment target.",
                 vm.latest_error_message
@@ -158,7 +160,8 @@ a + b = "value"; // Error at '=': Invalid assignment target.
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Invalid assignment target.",
                 vm.latest_error_message
@@ -210,7 +213,8 @@ var a = "a";
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Invalid assignment target.",
                 vm.latest_error_message
@@ -255,7 +259,8 @@ Foo();
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Invalid assignment target.",
                 vm.latest_error_message
@@ -270,7 +275,8 @@ unknown = "what"; // expect runtime error: Undefined variable 'unknown'.
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Undefined variable 'unknown'.",
                 vm.latest_error_message
@@ -642,7 +648,8 @@ print;
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Expect expression.",
                 vm.latest_error_message
@@ -667,7 +674,8 @@ err; // // expect runtime error: Undefined variable 'err'.
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Undefined variable 'err'.",
                 vm.latest_error_message
@@ -740,7 +748,8 @@ print a;
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Unterminated string.",
                 vm.latest_error_message
@@ -762,7 +771,8 @@ fun foo(a) {
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Already variable with this name in this scope.",
                 vm.latest_error_message
@@ -780,7 +790,8 @@ fun foo(a) {
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Already variable with this name in this scope.",
                 vm.latest_error_message
@@ -799,7 +810,8 @@ fun foo(arg,
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Already variable with this name in this scope.",
                 vm.latest_error_message
@@ -892,7 +904,7 @@ var a = "outer";
             Ok(())
         }
 
-        #[ignore = "class"]
+        #[ignore = "method"]
         #[test]
         fn local_from_method() -> VMResult {
             let source = r#"
@@ -1060,7 +1072,8 @@ print notDefined;  // expect runtime error: Undefined variable 'notDefined'.
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Undefined variable 'notDefined'.",
                 vm.latest_error_message
@@ -1077,7 +1090,8 @@ print notDefined;  // expect runtime error: Undefined variable 'notDefined'.
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Undefined variable 'notDefined'.",
                 vm.latest_error_message
@@ -1129,7 +1143,8 @@ var false = "value";
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Expect variable name.",
                 vm.latest_error_message
@@ -1164,7 +1179,8 @@ var a = "outer";
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Can't read local variable in its own initializer.",
                 vm.latest_error_message
@@ -1180,7 +1196,8 @@ var nil = "value";
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Expect variable name.",
                 vm.latest_error_message
@@ -1196,7 +1213,8 @@ var this = "value";
 "#
             .to_string();
             let mut vm = VM::init();
-            vm.interpret(source);
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
             assert_eq!(
                 "Expect variable name.",
                 vm.latest_error_message
@@ -1408,7 +1426,8 @@ foo(a | b);
 "#
         .to_string();
         let mut vm = VM::init();
-        vm.interpret(source);
+        #[allow(unused_must_use)]
+        { vm.interpret(source); }
         assert_eq!(
             "Unexpected character.",
             vm.latest_error_message
