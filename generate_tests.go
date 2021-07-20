@@ -72,7 +72,7 @@ func writeTest(outputFile *os.File, fileInfo *fs.FileInfo, moduleName string, in
 		// Write one assertion for each expected value.
 		for i := len(assertValues) - 1; i >= 0; i-- {
 			writeLine(outputFile, "assert_eq!(", indentationLevel+1)
-			writeLine(outputFile, fmt.Sprintf("\"%s\".to_string(),", assertValues[i]), indentationLevel+2)
+			writeLine(outputFile, fmt.Sprintf("\"%s\",", assertValues[i]), indentationLevel+2)
 			writeLine(outputFile, "vm.printed_values.pop().unwrap().to_string()", indentationLevel+2)
 			writeLine(outputFile, ");", indentationLevel+1)
 		}

@@ -79,7 +79,7 @@ print (5 - (3 - 1)) + -1;
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "2".to_string(),
+                "2",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -106,15 +106,15 @@ print c; // expect: c
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "c".to_string(),
+                "c",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "c".to_string(),
+                "c",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "c".to_string(),
+                "c",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -136,19 +136,19 @@ print a; // expect: arg
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "arg".to_string(),
+                "arg",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "arg".to_string(),
+                "arg",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "after".to_string(),
+                "after",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "before".to_string(),
+                "before",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -207,19 +207,19 @@ a + b = "value"; // Error at '=': Invalid assignment target.
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "arg".to_string(),
+                "arg",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "arg".to_string(),
+                "arg",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "after".to_string(),
+                "after",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "before".to_string(),
+                "before",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -255,11 +255,11 @@ print c; // expect: var
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "var".to_string(),
+                "var",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "var".to_string(),
+                "var",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -324,7 +324,7 @@ print "ok"; // expect: ok
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "ok".to_string(),
+                "ok",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -346,11 +346,11 @@ print a; // expect: outer
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "outer".to_string(),
+                "outer",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "inner".to_string(),
+                "inner",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -391,75 +391,75 @@ print false != "";      // expect: true
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -476,15 +476,15 @@ print !!true;   // expect: true
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -504,7 +504,7 @@ print "ok"; // expect: ok
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "ok".to_string(),
+                "ok",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -547,7 +547,7 @@ print "ok"; // expect: ok
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "ok".to_string(),
+                "ok",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -603,55 +603,55 @@ print (2 * (6 - (2 + 2))); // expect: 4
         let mut vm = VM::init();
         vm.interpret(source)?;
         assert_eq!(
-            "4".to_string(),
+            "4",
             vm.printed_values.pop().unwrap().to_string()
         );
         assert_eq!(
-            "0".to_string(),
+            "0",
             vm.printed_values.pop().unwrap().to_string()
         );
         assert_eq!(
-            "0".to_string(),
+            "0",
             vm.printed_values.pop().unwrap().to_string()
         );
         assert_eq!(
-            "0".to_string(),
+            "0",
             vm.printed_values.pop().unwrap().to_string()
         );
         assert_eq!(
-            "0".to_string(),
+            "0",
             vm.printed_values.pop().unwrap().to_string()
         );
         assert_eq!(
-            "true".to_string(),
+            "true",
             vm.printed_values.pop().unwrap().to_string()
         );
         assert_eq!(
-            "true".to_string(),
+            "true",
             vm.printed_values.pop().unwrap().to_string()
         );
         assert_eq!(
-            "true".to_string(),
+            "true",
             vm.printed_values.pop().unwrap().to_string()
         );
         assert_eq!(
-            "true".to_string(),
+            "true",
             vm.printed_values.pop().unwrap().to_string()
         );
         assert_eq!(
-            "0".to_string(),
+            "0",
             vm.printed_values.pop().unwrap().to_string()
         );
         assert_eq!(
-            "4".to_string(),
+            "4",
             vm.printed_values.pop().unwrap().to_string()
         );
         assert_eq!(
-            "8".to_string(),
+            "8",
             vm.printed_values.pop().unwrap().to_string()
         );
         assert_eq!(
-            "14".to_string(),
+            "14",
             vm.printed_values.pop().unwrap().to_string()
         );
         Ok(())
@@ -716,15 +716,15 @@ print "A~¶Þॐஃ"; // expect: A~¶Þॐஃ
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "A~¶Þॐஃ".to_string(),
+                "A~¶Þॐஃ",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "a string".to_string(),
+                "a string",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "()".to_string(),
+                "()",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -746,15 +746,15 @@ print a;
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "3".to_string(),
+                "3",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "2".to_string(),
+                "2",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "1".to_string(),
+                "1",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -858,11 +858,11 @@ var a = "outer";
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "outer".to_string(),
+                "outer",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "outer".to_string(),
+                "outer",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -886,19 +886,19 @@ var a = "outer";
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "a b d".to_string(),
+                "a b d",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "a c".to_string(),
+                "a c",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "a b".to_string(),
+                "a b",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "a".to_string(),
+                "a",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -918,7 +918,7 @@ var a = "outer";
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "outer".to_string(),
+                "outer",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -942,7 +942,7 @@ Foo().method(); // expect: variable
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "variable".to_string(),
+                "variable",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -959,7 +959,7 @@ print a; // expect: nil
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "nil".to_string(),
+                "nil",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -976,7 +976,7 @@ print a; // expect: 2
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "2".to_string(),
+                "2",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -999,11 +999,11 @@ print a; // expect: 2
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "second".to_string(),
+                "second",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "first".to_string(),
+                "first",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -1025,11 +1025,11 @@ print a; // expect: 2
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "inner".to_string(),
+                "inner",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "outer".to_string(),
+                "outer",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -1049,11 +1049,11 @@ print a; // expect: global
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "global".to_string(),
+                "global",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "shadow".to_string(),
+                "shadow",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -1075,11 +1075,11 @@ print a; // expect: global
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "local".to_string(),
+                "local",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "shadow".to_string(),
+                "shadow",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -1129,7 +1129,7 @@ print a; // expect: nil
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "nil".to_string(),
+                "nil",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -1149,7 +1149,7 @@ print "ok"; // expect: ok
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "ok".to_string(),
+                "ok",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -1183,7 +1183,7 @@ print a; // expect: value
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "value".to_string(),
+                "value",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -1273,31 +1273,31 @@ print b; // expect: false
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "3".to_string(),
+                "3",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "1".to_string(),
+                "1",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -1319,23 +1319,23 @@ print "" and "ok"; // expect: ok
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "ok".to_string(),
+                "ok",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "ok".to_string(),
+                "ok",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "ok".to_string(),
+                "ok",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "nil".to_string(),
+                "nil",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -1368,31 +1368,31 @@ print b; // expect: true
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "false".to_string(),
+                "false",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "1".to_string(),
+                "1",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "1".to_string(),
+                "1",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
@@ -1414,23 +1414,23 @@ print "s" or "ok"; // expect: s
             let mut vm = VM::init();
             vm.interpret(source)?;
             assert_eq!(
-                "s".to_string(),
+                "s",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "0".to_string(),
+                "0",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "true".to_string(),
+                "true",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "ok".to_string(),
+                "ok",
                 vm.printed_values.pop().unwrap().to_string()
             );
             assert_eq!(
-                "ok".to_string(),
+                "ok",
                 vm.printed_values.pop().unwrap().to_string()
             );
             Ok(())
