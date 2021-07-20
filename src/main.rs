@@ -66,6 +66,27 @@ mod tests {
     use super::*;
     use crate::value::Value;
 
+    mod expressions {
+        use super::*;
+
+        #[test]
+        fn evaluate() -> VMResult {
+            let source = r#"
+// Note: Slightly modified from the original.
+print (5 - (3 - 1)) + -1;
+// expect: 2
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "2".to_string(),
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+    }
+
     mod assignment {
         use super::*;
 
