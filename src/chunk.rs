@@ -16,7 +16,10 @@ pub enum Instruction {
     /// The index of the variable in the [Compiler]'s locals array.
     OpGetLocal(usize),
     OpGreater,
-    OpJumpIfFalse,
+    /// The offset used to calculate the bytecode instruction to jump to.
+    OpJump(usize),
+    /// The offset used to calculate the bytecode instruction to jump to.
+    OpJumpIfFalse(usize),
     OpLess,
     OpAdd,
     /// The index of the variable name in the [Chunk]'s constants array.
@@ -37,8 +40,9 @@ pub enum Instruction {
 pub struct Chunk {
     /// Holds the Chunk's bytecode.
     pub bytecode: Vec<Instruction>,
-    /// Exactly parallels the bytecode array.
     /// Holds the line number of each corresponding OpCode.
+    ///
+    /// Exactly parallels the bytecode array.
     pub lines: Vec<i32>,
     /// Holds the Chunk's constant values.
     pub constants: Vec<Value>,
@@ -103,6 +107,10 @@ impl Chunk {
             | Instruction::OpSetLocal(idx) => {
                 let constant = &self.constants[idx];
                 println!("{:?}    \tvalue: {:?}", instruction, constant);
+            }
+            | Instruction::OpJumpIfFalse(val)
+            | Instruction::OpJump(val) => {
+                println!("{:?}    \tvalue: {:?}", instruction, val);
             }
             Instruction::OpNegate
             | Instruction::OpEqual

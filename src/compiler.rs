@@ -351,7 +351,7 @@ impl Compiler {
         self.add_local(name);
     }
 
-    // Variable becomes available for use.
+    /// The variable becomes available for use.
     fn define_variable(&mut self, global: usize) {
         // TODO: current scope depth
         if self.scope_depth > 0 {
@@ -363,7 +363,7 @@ impl Compiler {
     }
 
     /// Change the depth of the [Local] from -1 to the correct depth,
-    /// indicating the declaration statement has ended and the variable can now be used.
+    /// indicating that the declaration statement has ended and the variable can now be used.
     fn mark_initialized(&mut self) {
         let i = self.locals.len() - 1;
         self.locals[i].depth = self.scope_depth;
@@ -395,6 +395,8 @@ impl Compiler {
         return true;
     }
 
+    /// Advance until one of a number of tokens is found, so that one error does not
+    /// lead to a flood of redundant error messages.
     fn synchronize(&mut self) {
         self.parser.panic_mode = false;
 
@@ -420,6 +422,8 @@ impl Compiler {
     fn statement(&mut self) {
         if self.match_token(TokenType::Print) {
             self.print_statement();
+        } else if self.match_token(TokenType::If) {
+            self.if_statement();
         } else if self.match_token(TokenType::LeftBrace) {
             self.begin_scope();
             self.block();
@@ -428,6 +432,53 @@ impl Compiler {
             self.expression_statement();
         }
     }
+
+    fn if_statement(&mut self) {
+        self.consume(TokenType::LeftParen, "Expect '(' after 'if'.");
+        self.expression();
+        self.consume(TokenType::RightParen, "Expect ')' after condition.");
+
+        // Using a placeholder offset for the OpJumpIfFalse instruction.
+        let then_jump = self.emit_jump(Instruction::OpJumpIfFalse(0xffff));
+        // Pop the result of the if expression, if it was true, after it has been used by OpJumpIfFalse.
+        self.emit_instruction(Instruction::OpPop);
+        self.statement();
+
+        // Using a placeholder offset for the OpJump instruction.
+        let else_jump = self.emit_jump(Instruction::OpJump(0xffff));
+
+        self.patch_jump(then_jump);
+        // If the if expression was false, the result of the if expression was not popped earlier.
+        // In that case, it is popped here.
+        self.emit_instruction(Instruction::OpPop);
+
+        if self.match_token(TokenType::Else) {
+            self.statement();
+        }
+        self.patch_jump(else_jump);
+    }
+
+    /// Returns the offset of the emitted instruction in the chunk.
+    fn emit_jump(&mut self, instruction: Instruction) -> usize {
+        self.emit_instruction(instruction);
+        self.current_chunk.bytecode.len() - 1
+    }
+
+    /// Put the correct number of instructions to jump over, if the if condition is false,
+    /// now that the if block has been compiled.
+    fn patch_jump(&mut self, offset: usize) {
+        let jump = self.current_chunk.bytecode.len() - offset - 1;
+        match self.current_chunk.bytecode[offset] {
+            Instruction::OpJump(_) => {
+                self.current_chunk.bytecode[offset] = Instruction::OpJump(jump);
+            }
+            Instruction::OpJumpIfFalse(_) => {
+                self.current_chunk.bytecode[offset] = Instruction::OpJumpIfFalse(jump);
+            }
+            _ => {}
+        }
+    }
+
 
     fn block(&mut self) {
         while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {

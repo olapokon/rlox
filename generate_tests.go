@@ -26,7 +26,7 @@ func writeTest(outputFile *os.File, fileInfo *fs.FileInfo, moduleName string, in
 
 	outputFile.WriteString("\n")
 	writeLine(outputFile, "#[test]", indentationLevel)
-	writeLine(outputFile, fmt.Sprintf("fn %s() -> VMResult {", name), indentationLevel)
+	writeLine(outputFile, fmt.Sprintf("fn %s_test() -> VMResult {", name), indentationLevel)
 
 	// Write test body.
 	var path string
@@ -93,7 +93,7 @@ func writeTest(outputFile *os.File, fileInfo *fs.FileInfo, moduleName string, in
 
 func writeModule(outputFile *os.File, moduleName string, modFilesInfo []fs.FileInfo, indentationLevel int) {
 	outputFile.WriteString("\n")
-	writeLine(outputFile, fmt.Sprintf("mod %s {", moduleName), indentationLevel)
+	writeLine(outputFile, fmt.Sprintf("mod %s_tests {", moduleName), indentationLevel)
 	writeLine(outputFile, "use super::*;", indentationLevel+1)
 
 	for _, tf := range modFilesInfo {
@@ -127,7 +127,7 @@ func writeToFile(files []fs.FileInfo) {
 
 		// If it is a directory, create a new test module for its tests.
 		// if name == "benchmark" || name == "regression" {
-		if name != "expressions" {
+		if name != "if" {
 			// Directories to exclude.
 			continue
 		}

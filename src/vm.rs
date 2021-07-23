@@ -80,7 +80,7 @@ impl VM {
             let instruction = self.read_instruction(&chunk);
             match instruction {
                 Instruction::OpNot => {
-                    let b = is_falsey(self.pop_from_stack());
+                    let b = is_falsey(&self.pop_from_stack());
                     self.push_to_stack(Value::Boolean(b))
                 }
                 Instruction::OpNegate => {
@@ -96,13 +96,22 @@ impl VM {
                     self.stack[stack_index] = Cell::new(v.clone());
                     self.push_to_stack(v);
                 }
+                Instruction::OpJump(offset) => {
+                    self.ip += offset;
+                }
+                Instruction::OpJumpIfFalse(offset) => {
+                    let v: Value = self.pop_from_stack();
+                    if is_falsey(&v) {
+                        self.ip += offset;
+                    }
+                    self.push_to_stack(v);
+                }
                 Instruction::OpSetLocal(stack_index) => {
                     let v = self.stack[self.stack_top - 1].take();
                     self.stack[self.stack_top - 1] = Cell::new(v.clone());
                     self.stack[stack_index] = Cell::new(v);
                 }
                 Instruction::OpGetGlobal(index) => {
-                    // let mut v = None;
                     if let Value::String(name) = chunk.read_constant(index) {
                         let v = self.globals.get(&name.to_string());
                         if v.is_none() {
@@ -285,7 +294,7 @@ impl VM {
 }
 
 // TODO: move to value.rs
-fn is_falsey(v: Value) -> bool {
+fn is_falsey(v: &Value) -> bool {
     match v {
         Value::Nil => true,
         Value::Boolean(b) => !b,
