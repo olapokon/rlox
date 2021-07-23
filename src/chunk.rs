@@ -21,6 +21,8 @@ pub enum Instruction {
     /// The offset used to calculate the bytecode instruction to jump to.
     OpJumpIfFalse(usize),
     OpLess,
+    /// The offset used to calculate the bytecode instruction to jump to.
+    OpLoop(usize),
     OpAdd,
     /// The index of the variable name in the [Chunk]'s constants array.
     OpSetGlobal(usize),
@@ -109,7 +111,8 @@ impl Chunk {
                 println!("{:?}    \tvalue: {:?}", instruction, constant);
             }
             | Instruction::OpJumpIfFalse(val)
-            | Instruction::OpJump(val) => {
+            | Instruction::OpJump(val)
+            | Instruction::OpLoop(val) => {
                 println!("{:?}    \tvalue: {:?}", instruction, val);
             }
             Instruction::OpNegate

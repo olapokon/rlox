@@ -1676,4 +1676,590 @@ foo(a | b);
         );
         Ok(())
     }
+
+    mod while_tests {
+        use super::*;
+
+        #[ignore = "class"]
+        #[test]
+        fn class_in_body_test() -> VMResult {
+            let source = r#"
+// [line 2] Error at 'class': Expect expression.
+while (true) class Foo {}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
+            assert_eq!(
+                "Expect expression.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+
+        #[ignore = "closure"]
+        #[test]
+        fn closure_in_body_test() -> VMResult {
+            let source = r#"
+var f1;
+var f2;
+var f3;
+
+var i = 1;
+while (i < 4) {
+  var j = i;
+  fun f() { print j; }
+
+  if (j == 1) f1 = f;
+  else if (j == 2) f2 = f;
+  else f3 = f;
+
+  i = i + 1;
+}
+
+f1(); // expect: 1
+f2(); // expect: 2
+f3(); // expect: 3
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "3",
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "2",
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "1",
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[ignore = "function"]
+        #[test]
+        fn fun_in_body_test() -> VMResult {
+            let source = r#"
+// [line 2] Error at 'fun': Expect expression.
+while (true) fun foo() {}
+"#
+            .to_string();
+            let mut vm = VM::init();
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
+            assert_eq!(
+                "Expect expression.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+
+        #[ignore = "closure"]
+        #[test]
+        fn return_closure_test() -> VMResult {
+            let source = r#"
+fun f() {
+  while (true) {
+    var i = "i";
+    fun g() { print i; }
+    return g;
+  }
+}
+
+var h = f();
+h(); // expect: i
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "i",
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[ignore = "function"]
+        #[test]
+        fn return_inside_test() -> VMResult {
+            let source = r#"
+fun f() {
+  while (true) {
+    var i = "i";
+    return i;
+  }
+}
+
+print f();
+// expect: i
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "i",
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn syntax_test() -> VMResult {
+            let source = r#"
+// Single-expression body.
+var c = 0;
+while (c < 3) print c = c + 1;
+// expect: 1
+// expect: 2
+// expect: 3
+
+// Block body.
+var a = 0;
+while (a < 3) {
+  print a;
+  a = a + 1;
+}
+// expect: 0
+// expect: 1
+// expect: 2
+
+// Statement bodies.
+while (false) if (true) 1; else 2;
+while (false) while (true) 1;
+while (false) for (;;) 1;
+"#
+            .to_string();
+            let mut vm = VM::init();
+            vm.interpret(source)?;
+            assert_eq!(
+                "2",
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "1",
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "0",
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "3",
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "2",
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            assert_eq!(
+                "1",
+                vm.printed_values.pop().unwrap().to_string()
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn var_in_body_test() -> VMResult {
+            let source = r#"
+// [line 2] Error at 'var': Expect expression.
+while (true) var foo;
+"#
+            .to_string();
+            let mut vm = VM::init();
+            #[allow(unused_must_use)]
+            { vm.interpret(source); }
+            assert_eq!(
+                "Expect expression.",
+                vm.latest_error_message
+            );
+            Ok(())
+        }
+    }
+
+    mod for_tests {
+        use super::*;
+
+    #[ignore = "class"]
+    #[test]
+    fn class_in_body_test() -> VMResult {
+        let source = r#"
+// [line 2] Error at 'class': Expect expression.
+for (;;) class Foo {}
+"#
+        .to_string();
+        let mut vm = VM::init();
+        #[allow(unused_must_use)]
+        { vm.interpret(source); }
+        assert_eq!(
+            "Expect expression.",
+            vm.latest_error_message
+        );
+        Ok(())
+    }
+
+    #[ignore = "closure"]
+    #[test]
+    fn closure_in_body_test() -> VMResult {
+        let source = r#"
+var f1;
+var f2;
+var f3;
+
+for (var i = 1; i < 4; i = i + 1) {
+var j = i;
+fun f() {
+print i;
+print j;
+}
+
+if (j == 1) f1 = f;
+else if (j == 2) f2 = f;
+else f3 = f;
+}
+
+f1(); // expect: 4
+  // expect: 1
+f2(); // expect: 4
+  // expect: 2
+f3(); // expect: 4
+  // expect: 3
+"#
+        .to_string();
+        let mut vm = VM::init();
+        vm.interpret(source)?;
+        assert_eq!(
+            "3",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "4",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "2",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "4",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "1",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "4",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        Ok(())
+    }
+
+    #[ignore = "function"]
+    #[test]
+    fn fun_in_body_test() -> VMResult {
+        let source = r#"
+// [line 2] Error at 'fun': Expect expression.
+for (;;) fun foo() {}
+"#
+        .to_string();
+        let mut vm = VM::init();
+        #[allow(unused_must_use)]
+        { vm.interpret(source); }
+        assert_eq!(
+            "Expect expression.",
+            vm.latest_error_message
+        );
+        Ok(())
+    }
+
+    #[ignore = "closure"]
+    #[test]
+    fn return_closure_test() -> VMResult {
+        let source = r#"
+fun f() {
+for (;;) {
+var i = "i";
+fun g() { print i; }
+return g;
+}
+}
+
+var h = f();
+h(); // expect: i
+"#
+        .to_string();
+        let mut vm = VM::init();
+        vm.interpret(source)?;
+        assert_eq!(
+            "i",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        Ok(())
+    }
+
+    #[ignore = "function"]
+    #[test]
+    fn return_inside_test() -> VMResult {
+        let source = r#"
+fun f() {
+for (;;) {
+var i = "i";
+return i;
+}
+}
+
+print f();
+// expect: i
+"#
+        .to_string();
+        let mut vm = VM::init();
+        vm.interpret(source)?;
+        assert_eq!(
+            "i",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn scope_test() -> VMResult {
+        let source = r#"
+{
+var i = "before";
+
+// New variable is in inner scope.
+for (var i = 0; i < 1; i = i + 1) {
+print i; // expect: 0
+
+// Loop body is in second inner scope.
+var i = -1;
+print i; // expect: -1
+}
+}
+
+{
+// New variable shadows outer variable.
+for (var i = 0; i > 0; i = i + 1) {}
+
+// Goes out of scope after loop.
+var i = "after";
+print i; // expect: after
+
+// Can reuse an existing variable.
+for (i = 0; i < 1; i = i + 1) {
+print i; // expect: 0
+}
+}
+"#
+        .to_string();
+        let mut vm = VM::init();
+        vm.interpret(source)?;
+        assert_eq!(
+            "0",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "after",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "-1",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "0",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn statement_condition_test() -> VMResult {
+        let source = r#"
+// [line 3] Error at ')': Expect ';' after expression.
+for (var a = 1; {}; a = a + 1) {}
+"#
+        .to_string();
+        let mut vm = VM::init();
+        #[allow(unused_must_use)]
+        { vm.interpret(source); }
+        assert_eq!(
+            "Expect ';' after expression.",
+            vm.latest_error_message
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn statement_increment_test() -> VMResult {
+        let source = r#"
+// [line 2] Error at '{': Expect expression.
+for (var a = 1; a < 2; {}) {}
+"#
+        .to_string();
+        let mut vm = VM::init();
+        #[allow(unused_must_use)]
+        { vm.interpret(source); }
+        assert_eq!(
+            "Expect expression.",
+            vm.latest_error_message
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn statement_initializer_test() -> VMResult {
+        let source = r#"
+// [line 3] Error at ')': Expect ';' after expression.
+for ({}; a < 2; a = a + 1) {}
+"#
+        .to_string();
+        let mut vm = VM::init();
+        #[allow(unused_must_use)]
+        { vm.interpret(source); }
+        assert_eq!(
+            "Expect ';' after expression.",
+            vm.latest_error_message
+        );
+        Ok(())
+    }
+
+    #[ignore = "function"]
+    #[test]
+    fn syntax_test() -> VMResult {
+        let source = r#"
+// Single-expression body.
+for (var c = 0; c < 3;) print c = c + 1;
+// expect: 1
+// expect: 2
+// expect: 3
+
+// Block body.
+for (var a = 0; a < 3; a = a + 1) {
+print a;
+}
+// expect: 0
+// expect: 1
+// expect: 2
+
+// No clauses.
+fun foo() {
+for (;;) return "done";
+}
+print foo(); // expect: done
+
+// No variable.
+var i = 0;
+for (; i < 2; i = i + 1) print i;
+// expect: 0
+// expect: 1
+
+// No condition.
+fun bar() {
+for (var i = 0;; i = i + 1) {
+print i;
+if (i >= 2) return;
+}
+}
+bar();
+// expect: 0
+// expect: 1
+// expect: 2
+
+// No increment.
+for (var i = 0; i < 2;) {
+print i;
+i = i + 1;
+}
+// expect: 0
+// expect: 1
+
+// Statement bodies.
+for (; false;) if (true) 1; else 2;
+for (; false;) while (true) 1;
+for (; false;) for (;;) 1;
+"#
+        .to_string();
+        let mut vm = VM::init();
+        vm.interpret(source)?;
+        assert_eq!(
+            "1",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "0",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "2",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "1",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "0",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "1",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "0",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "done",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "2",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "1",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "0",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "3",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "2",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        assert_eq!(
+            "1",
+            vm.printed_values.pop().unwrap().to_string()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn var_in_body_test() -> VMResult {
+        let source = r#"
+// [line 2] Error at 'var': Expect expression.
+for (;;) var foo;
+"#
+        .to_string();
+        let mut vm = VM::init();
+        #[allow(unused_must_use)]
+        { vm.interpret(source); }
+        assert_eq!(
+            "Expect expression.",
+            vm.latest_error_message
+        );
+        Ok(())
+    }
+}
 }

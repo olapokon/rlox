@@ -106,6 +106,9 @@ impl VM {
                     }
                     self.push_to_stack(v);
                 }
+                Instruction::OpLoop(offset) => {
+                    self.ip -= offset;
+                }
                 Instruction::OpSetLocal(stack_index) => {
                     let v = self.stack[self.stack_top - 1].take();
                     self.stack[self.stack_top - 1] = Cell::new(v.clone());

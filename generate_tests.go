@@ -127,7 +127,7 @@ func writeToFile(files []fs.FileInfo) {
 
 		// If it is a directory, create a new test module for its tests.
 		// if name == "benchmark" || name == "regression" {
-		if name != "if" {
+		if name != "for" {
 			// Directories to exclude.
 			continue
 		}

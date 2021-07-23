@@ -422,8 +422,12 @@ impl Compiler {
     fn statement(&mut self) {
         if self.match_token(TokenType::Print) {
             self.print_statement();
+        } else if self.match_token(TokenType::For) {
+            self.for_statement();
         } else if self.match_token(TokenType::If) {
             self.if_statement();
+        } else if self.match_token(TokenType::While) {
+            self.while_statement();
         } else if self.match_token(TokenType::LeftBrace) {
             self.begin_scope();
             self.block();
@@ -458,6 +462,75 @@ impl Compiler {
         self.patch_jump(else_jump);
     }
 
+    fn for_statement(&mut self) {
+        // Starting new scope, in case the initializer declares a variable.
+        self.begin_scope();
+
+        self.consume(TokenType::LeftParen, "Expect '(' after 'for'.");
+        // Left/Initializer clause.
+        if self.match_token(TokenType::Semicolon) {
+            // There is no initializer.
+        } else if self.match_token(TokenType::Var) {
+            self.var_declaration();
+        } else {
+            // The initializer may be an expression.
+            self.expression_statement();
+        }
+
+        let mut loop_start = self.current_chunk.bytecode.len();
+        let mut exit_jump = -1;
+        // Middle/Test clause.
+        if !self.match_token(TokenType::Semicolon) {
+            self.expression();
+            self.consume(TokenType::Semicolon, "Expect ';' after loop condition.");
+
+            // If the middle clause is false exit the for loop.
+            exit_jump = self.emit_jump(Instruction::OpJumpIfFalse(0xffff)) as i32;
+            self.emit_instruction(Instruction::OpPop);
+        }
+
+        // Right/Increment clause.
+        if !self.match_token(TokenType::RightParen) {
+            let body_jump = self.emit_jump(Instruction::OpJump(0xfff));
+            let increment_start = self.current_chunk.bytecode.len();
+            self.expression();
+            self.emit_instruction(Instruction::OpPop);
+            self.consume(TokenType::RightParen, "Expect ')' after for clauses.");
+
+            self.emit_loop(loop_start);
+            loop_start = increment_start;
+            self.patch_jump(body_jump);
+        }
+
+        // Body
+        self.statement();
+        self.emit_loop(loop_start);
+
+        // A jump instruction only exists if there is a middle clause.
+        if exit_jump != -1 {
+            self.patch_jump(exit_jump as usize);
+            self.emit_instruction(Instruction::OpPop);
+        }
+
+        self.end_scope();
+    }
+
+    fn while_statement(&mut self) {
+        let loop_start = self.current_chunk.bytecode.len();
+        self.consume(TokenType::LeftParen, "Expect '(' after 'while'.");
+        self.expression();
+        self.consume(TokenType::RightParen, "Expect ')' after condition.");
+
+        let exit_jump = self.emit_jump(Instruction::OpJumpIfFalse(0xffff));
+        self.emit_instruction(Instruction::OpPop);
+        self.statement();
+        // jump back to the beginning
+        self.emit_loop(loop_start);
+
+        self.patch_jump(exit_jump);
+        self.emit_instruction(Instruction::OpPop);
+    }
+
     /// Returns the offset of the emitted instruction in the chunk.
     fn emit_jump(&mut self, instruction: Instruction) -> usize {
         self.emit_instruction(instruction);
@@ -477,6 +550,11 @@ impl Compiler {
             }
             _ => {}
         }
+    }
+
+    fn emit_loop(&mut self, loop_start: usize) {
+        let offset = self.current_chunk.bytecode.len() - loop_start + 1;
+        self.emit_instruction(Instruction::OpLoop(offset));
     }
 
     fn and(&mut self) {
