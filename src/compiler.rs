@@ -33,9 +33,9 @@ enum ParseFn {
     Variable,
     String,
     Number,
-    // And,
+    And,
     Literal,
-    // Or,
+    Or,
     // Super,
     // This,
     None,
@@ -479,6 +479,23 @@ impl Compiler {
         }
     }
 
+    fn and(&mut self) {
+        let end_jump = self.emit_jump(Instruction::OpJumpIfFalse(0xffff));
+        self.emit_instruction(Instruction::OpPop);
+        self.parse_precedence(Precedence::And as i32);
+        self.patch_jump(end_jump);
+    }
+
+    fn or(&mut self) {
+        let else_jump = self.emit_jump(Instruction::OpJumpIfFalse(0xffff));
+        let end_jump = self.emit_jump(Instruction::OpJump(0xffff));
+
+        self.patch_jump(else_jump);
+        self.emit_instruction(Instruction::OpPop);
+
+        self.parse_precedence(Precedence::Or as i32);
+        self.patch_jump(end_jump);
+    }
 
     fn block(&mut self) {
         while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {
@@ -626,9 +643,9 @@ impl Compiler {
             ParseFn::Variable => self.variable(can_assign),
             ParseFn::String => self.string(),
             ParseFn::Number => self.number(),
-            // ParseFn::And => ,
+            ParseFn::And => self.and(),
             ParseFn::Literal => self.literal(),
-            // ParseFn::Or => ,
+            ParseFn::Or => self.or(),
             // ParseFn::Super => ,
             // ParseFn::This => ,
             // ParseFn::None => ,
@@ -750,8 +767,8 @@ impl Compiler {
             },
             TokenType::And => ParseRule {
                 prefix: ParseFn::None,
-                infix: ParseFn::None,
-                precedence: Precedence::None,
+                infix: ParseFn::And,
+                precedence: Precedence::And,
             },
             TokenType::Class => ParseRule {
                 prefix: ParseFn::None,
@@ -790,8 +807,8 @@ impl Compiler {
             },
             TokenType::Or => ParseRule {
                 prefix: ParseFn::None,
-                infix: ParseFn::None,
-                precedence: Precedence::None,
+                infix: ParseFn::Or,
+                precedence: Precedence::Or,
             },
             TokenType::Print => ParseRule {
                 prefix: ParseFn::None,
