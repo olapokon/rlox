@@ -5,7 +5,7 @@ use crate::{
     chunk::{Chunk, Instruction},
     parser::Parser,
     scanner::{Scanner, Token, TokenType},
-    value::Value,
+    value::value::Value,
 };
 
 #[derive(Clone, Copy, PartialEq, PartialOrd)]

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use crate::{binary_arithmetic_op, binary_boolean_op, compiler::*};
 use crate::{
     chunk::{Chunk, Instruction},
-    value::Value,
+    value::value::Value,
 };
 
 const STACK_MAX: usize = 256;

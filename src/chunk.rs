@@ -1,4 +1,4 @@
-use crate::value::Value;
+use crate::value::value::Value;
 
 /// The set of the VM's instruction codes.
 #[derive(Debug, Clone, Copy)]

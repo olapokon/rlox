@@ -1,6 +1,5 @@
 use std::{fmt::Display, rc::Rc};
 
-// #[derive(Debug, Clone)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Boolean(bool),
