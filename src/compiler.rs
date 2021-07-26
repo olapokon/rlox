@@ -85,7 +85,6 @@ pub struct Compiler {
 impl Compiler {
     pub fn compile(source: String) -> Result<Rc<RefCell<Function>>, String> {
         let mut compiler = Compiler::new(source.chars().collect(), FunctionType::Script);
-        // TODO
         // Reserve stack slot 0 for the Compiler's internal use, with placeholder values.
         // compiler.locals.push(Local {
         //     name: Token {
@@ -402,10 +401,6 @@ impl Compiler {
             self.error("Too many local variables in function.");
             return;
         }
-        // self.locals.push(Local {
-        //     name,
-        //     depth: self.scope_depth,
-        // });
         // When declaring a local, set the depth to -1, indicating it has not been initialized.
         self.locals.push(Local { name, depth: -1 });
     }

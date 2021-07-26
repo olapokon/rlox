@@ -1,4 +1,4 @@
-use std::{fmt::Display, rc::Rc};
+use std::{borrow::Borrow, cell::RefCell, fmt::Display, rc::Rc};
 
 use super::function::Function;
 
@@ -8,7 +8,7 @@ pub enum Value {
     Number(f64),
     Nil,
     String(Rc<String>),
-    Function(Rc<Function>),
+    Function(Rc<RefCell<Function>>),
 }
 
 #[macro_export]
@@ -92,7 +92,13 @@ impl Display for Value {
             Value::Number(n) => write!(f, "{}", n),
             Value::Nil => write!(f, "{}", "nil"),
             Value::String(s) => write!(f, "{}", s),
-            Value::Function(func) => write!(f, "{}", func.name),
+            Value::Function(func) => {
+                let name = &func.borrow_mut().name;
+                if name.is_empty() {
+                    return write!(f, "{}", "<script>");
+                }
+                return write!(f, "{}", name);
+            },
         }
     }
 }
