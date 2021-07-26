@@ -37,7 +37,7 @@ pub enum VMError {
 }
 
 impl VM {
-    pub fn init() -> VM {
+    pub fn new() -> VM {
         const v: Cell<Value> = Cell::new(Value::Nil);
         VM {
             ip: 0,

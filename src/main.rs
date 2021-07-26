@@ -36,7 +36,7 @@ fn repl() {
             .read_line(&mut user_input)
             .expect("Failed to read input");
 
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         #[allow(unused_must_use)]
         { vm.interpret(user_input.clone()); }
         user_input.clear();
@@ -52,7 +52,7 @@ fn run_file(path: String) {
         }
     };
 
-    let mut vm = VM::init();
+    let mut vm = VM::new();
     let result = vm.interpret(source);
 
     match result {
@@ -77,7 +77,7 @@ print (5 - (3 - 1)) + -1;
 // expect: 2
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "2",
@@ -104,7 +104,7 @@ print b; // expect: c
 print c; // expect: c
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "c",
@@ -134,7 +134,7 @@ print a = "arg"; // expect: arg
 print a; // expect: arg
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "arg",
@@ -162,7 +162,7 @@ var a = "a";
 (a) = "value"; // Error at '=': Invalid assignment target.
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -180,7 +180,7 @@ var b = "b";
 a + b = "value"; // Error at '=': Invalid assignment target.
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -205,7 +205,7 @@ a + b = "value"; // Error at '=': Invalid assignment target.
 }
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "arg",
@@ -233,7 +233,7 @@ var a = "a";
 !a = "value"; // Error at '=': Invalid assignment target.
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -253,7 +253,7 @@ print a; // expect: var
 print c; // expect: var
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "var",
@@ -279,7 +279,7 @@ class Foo {
 Foo();
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -295,7 +295,7 @@ Foo();
 unknown = "what"; // expect runtime error: Undefined variable 'unknown'.
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -322,7 +322,7 @@ if (false) {} else {}
 print "ok"; // expect: ok
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "ok",
@@ -344,7 +344,7 @@ var a = "outer";
 print a; // expect: outer
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "outer",
@@ -389,7 +389,7 @@ print false != "false"; // expect: true
 print false != "";      // expect: true
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "true",
@@ -474,7 +474,7 @@ print !false;   // expect: true
 print !!true;   // expect: true
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "true",
@@ -502,7 +502,7 @@ print "ok"; // expect: ok
 // comment
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "ok",
@@ -517,7 +517,7 @@ print "ok"; // expect: ok
 // comment
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             Ok(())
         }
 
@@ -527,7 +527,7 @@ print "ok"; // expect: ok
 // comment
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             Ok(())
         }
 
@@ -545,7 +545,7 @@ print "ok"; // expect: ok
 print "ok"; // expect: ok
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "ok",
@@ -560,7 +560,7 @@ print "ok"; // expect: ok
         let source = r#"
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         Ok(())
     }
 
@@ -601,7 +601,7 @@ print 1-1;   // expect: 0
 print (2 * (6 - (2 + 2))); // expect: 4
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         vm.interpret(source)?;
         assert_eq!(
             "4",
@@ -668,7 +668,7 @@ print (2 * (6 - (2 + 2))); // expect: 4
 print;
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -694,7 +694,7 @@ var a = "1
 err; // // expect runtime error: Undefined variable 'err'.
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -714,7 +714,7 @@ print "a string"; // expect: a string
 print "A~¶Þॐஃ"; // expect: A~¶Þॐஃ
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "A~¶Þॐஃ",
@@ -744,7 +744,7 @@ print a;
 // expect: 3
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "3",
@@ -768,7 +768,7 @@ print a;
 "this string has no close quote
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -791,7 +791,7 @@ fun foo(a) {
 }
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -810,7 +810,7 @@ fun foo(a) {
 }
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -830,7 +830,7 @@ fun foo(arg,
 }
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -856,7 +856,7 @@ var a = "outer";
 }
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "outer",
@@ -884,7 +884,7 @@ var a = "outer";
 }
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "a b d",
@@ -916,7 +916,7 @@ var a = "outer";
 }
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "outer",
@@ -940,7 +940,7 @@ class Foo {
 Foo().method(); // expect: variable
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "variable",
@@ -957,7 +957,7 @@ var a;
 print a; // expect: nil
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "nil",
@@ -974,7 +974,7 @@ var a = "2";
 print a; // expect: 2
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "2",
@@ -997,7 +997,7 @@ print a; // expect: 2
 }
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "second",
@@ -1023,7 +1023,7 @@ print a; // expect: 2
 }
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "inner",
@@ -1047,7 +1047,7 @@ var a = "global";
 print a; // expect: global
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "global",
@@ -1073,7 +1073,7 @@ print a; // expect: global
 }
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "local",
@@ -1092,7 +1092,7 @@ print a; // expect: global
 print notDefined;  // expect runtime error: Undefined variable 'notDefined'.
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1110,7 +1110,7 @@ print notDefined;  // expect runtime error: Undefined variable 'notDefined'.
 }
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1127,7 +1127,7 @@ var a;
 print a; // expect: nil
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "nil",
@@ -1147,7 +1147,7 @@ if (false) {
 print "ok"; // expect: ok
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "ok",
@@ -1163,7 +1163,7 @@ print "ok"; // expect: ok
 var false = "value";
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1181,7 +1181,7 @@ var a = a;
 print a; // expect: value
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "value",
@@ -1199,7 +1199,7 @@ var a = "outer";
 }
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1216,7 +1216,7 @@ var a = "outer";
 var nil = "value";
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1233,7 +1233,7 @@ var nil = "value";
 var this = "value";
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1271,7 +1271,7 @@ print a; // expect: true
 print b; // expect: false
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "false",
@@ -1317,7 +1317,7 @@ print 0 and "ok"; // expect: ok
 print "" and "ok"; // expect: ok
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "ok",
@@ -1366,7 +1366,7 @@ print a; // expect: false
 print b; // expect: true
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "true",
@@ -1412,7 +1412,7 @@ print 0 or "ok"; // expect: 0
 print "s" or "ok"; // expect: s
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "s",
@@ -1448,7 +1448,7 @@ print "s" or "ok"; // expect: s
 if (true) "ok"; else class Foo {}
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1465,7 +1465,7 @@ if (true) "ok"; else class Foo {}
 if (true) class Foo {}
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1483,7 +1483,7 @@ if (true) if (false) print "bad"; else print "good"; // expect: good
 if (false) if (true) print "bad"; else print "bad";
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "good",
@@ -1503,7 +1503,7 @@ if (false) print "bad"; else print "good"; // expect: good
 if (false) nil; else { print "block"; } // expect: block
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "block",
@@ -1527,7 +1527,7 @@ if (false) nil; else { print "block"; } // expect: block
 if (true) "ok"; else fun foo() {}
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1544,7 +1544,7 @@ if (true) "ok"; else fun foo() {}
 if (true) fun foo() {}
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1569,7 +1569,7 @@ var a = false;
 if (a = true) print a; // expect: true
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "true",
@@ -1599,7 +1599,7 @@ if (0) print 0; // expect: 0
 if ("") print "empty"; // expect: empty
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "empty",
@@ -1631,7 +1631,7 @@ if ("") print "empty"; // expect: empty
 if (true) "ok"; else var foo;
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1648,7 +1648,7 @@ if (true) "ok"; else var foo;
 if (true) var foo;
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1667,7 +1667,7 @@ if (true) var foo;
 foo(a | b);
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         #[allow(unused_must_use)]
         { vm.interpret(source); }
         assert_eq!(
@@ -1688,7 +1688,7 @@ foo(a | b);
 while (true) class Foo {}
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1723,7 +1723,7 @@ f2(); // expect: 2
 f3(); // expect: 3
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "3",
@@ -1748,7 +1748,7 @@ f3(); // expect: 3
 while (true) fun foo() {}
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1774,7 +1774,7 @@ var h = f();
 h(); // expect: i
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "i",
@@ -1798,7 +1798,7 @@ print f();
 // expect: i
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "i",
@@ -1833,7 +1833,7 @@ while (false) while (true) 1;
 while (false) for (;;) 1;
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             vm.interpret(source)?;
             assert_eq!(
                 "2",
@@ -1869,7 +1869,7 @@ while (false) for (;;) 1;
 while (true) var foo;
 "#
             .to_string();
-            let mut vm = VM::init();
+            let mut vm = VM::new();
             #[allow(unused_must_use)]
             { vm.interpret(source); }
             assert_eq!(
@@ -1891,7 +1891,7 @@ while (true) var foo;
 for (;;) class Foo {}
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         #[allow(unused_must_use)]
         { vm.interpret(source); }
         assert_eq!(
@@ -1929,7 +1929,7 @@ f3(); // expect: 4
   // expect: 3
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         vm.interpret(source)?;
         assert_eq!(
             "3",
@@ -1966,7 +1966,7 @@ f3(); // expect: 4
 for (;;) fun foo() {}
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         #[allow(unused_must_use)]
         { vm.interpret(source); }
         assert_eq!(
@@ -1992,7 +1992,7 @@ var h = f();
 h(); // expect: i
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         vm.interpret(source)?;
         assert_eq!(
             "i",
@@ -2016,7 +2016,7 @@ print f();
 // expect: i
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         vm.interpret(source)?;
         assert_eq!(
             "i",
@@ -2056,7 +2056,7 @@ print i; // expect: 0
 }
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         vm.interpret(source)?;
         assert_eq!(
             "0",
@@ -2084,7 +2084,7 @@ print i; // expect: 0
 for (var a = 1; {}; a = a + 1) {}
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         #[allow(unused_must_use)]
         { vm.interpret(source); }
         assert_eq!(
@@ -2101,7 +2101,7 @@ for (var a = 1; {}; a = a + 1) {}
 for (var a = 1; a < 2; {}) {}
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         #[allow(unused_must_use)]
         { vm.interpret(source); }
         assert_eq!(
@@ -2118,7 +2118,7 @@ for (var a = 1; a < 2; {}) {}
 for ({}; a < 2; a = a + 1) {}
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         #[allow(unused_must_use)]
         { vm.interpret(source); }
         assert_eq!(
@@ -2184,7 +2184,7 @@ for (; false;) while (true) 1;
 for (; false;) for (;;) 1;
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         vm.interpret(source)?;
         assert_eq!(
             "1",
@@ -2252,7 +2252,7 @@ for (; false;) for (;;) 1;
 for (;;) var foo;
 "#
         .to_string();
-        let mut vm = VM::init();
+        let mut vm = VM::new();
         #[allow(unused_must_use)]
         { vm.interpret(source); }
         assert_eq!(

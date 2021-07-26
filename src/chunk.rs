@@ -52,7 +52,7 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn init() -> Chunk {
+    pub fn new() -> Chunk {
         Chunk {
             bytecode: Vec::new(),
             constants: Vec::new(),

@@ -6,3 +6,13 @@ pub struct Function {
     pub chunk: Chunk,
     pub name: String,
 }
+
+impl Function {
+    fn new() -> Function {
+        Function {
+            arity: 0,
+            name : String::new(),
+            chunk: Chunk::new(),
+        }
+    }
+}

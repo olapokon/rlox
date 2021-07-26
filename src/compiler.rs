@@ -76,7 +76,7 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn compile(source: String) -> Result<Chunk, String> {
-        let mut compiler = Compiler::init(source.chars().collect());
+        let mut compiler = Compiler::new(source.chars().collect());
 
         compiler.advance();
         // compiler.expression();
@@ -93,13 +93,13 @@ impl Compiler {
         }
     }
 
-    fn init(source: Vec<char>) -> Compiler {
+    fn new(source: Vec<char>) -> Compiler {
         Compiler {
             // TODO: enclosing refactor?
             enclosing: None,
             locals: Vec::new(),
             scope_depth: 0,
-            current_chunk: Chunk::init(),
+            current_chunk: Chunk::new(),
             scanner: Scanner::init(source),
             parser: Parser::init(),
         }
