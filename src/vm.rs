@@ -38,10 +38,10 @@ pub enum VMError {
 
 impl VM {
     pub fn new() -> VM {
-        const v: Cell<Value> = Cell::new(Value::Nil);
+        const V: Cell<Value> = Cell::new(Value::Nil);
         VM {
             ip: 0,
-            stack: [v; STACK_MAX],
+            stack: [V; STACK_MAX],
             stack_top: 0,
             globals: HashMap::new(),
             printed_values: Vec::new(),
