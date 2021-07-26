@@ -1,12 +1,15 @@
 use std::{fmt::Display, rc::Rc};
 
-#[derive(Debug, Clone, PartialEq)]
+use super::function::Function;
+
+#[derive(Debug, Clone)]
 pub enum Value {
     Boolean(bool),
     Number(f64),
     Nil,
     // TODO: string interning? may not be necessary
     String(Rc<String>),
+    Function(Rc<Function>),
 }
 
 #[macro_export]
@@ -69,6 +72,8 @@ impl Value {
                 Value::String(s2) => s1.eq(&s2),
                 _ => false,
             },
+            // TODO: equality for other heap allocated values.
+            _ => false,
         }
     }
 
@@ -88,6 +93,7 @@ impl Display for Value {
             Value::Number(n) => write!(f, "{}", n),
             Value::Nil => write!(f, "{}", "nil"),
             Value::String(s) => write!(f, "{}", s),
+            Value::Function(func) => write!(f, "{}", func.name),
         }
     }
 }

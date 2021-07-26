@@ -1,7 +1,7 @@
 use crate::value::value::Value;
 
 /// The set of the VM's instruction codes.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Instruction {
     /// The index of the constant in the [Chunk]'s constants array.
     OpConstant(usize),
@@ -39,6 +39,7 @@ pub enum Instruction {
 }
 
 /// A chunk of bytecode.
+#[derive(Debug, Clone)]
 pub struct Chunk {
     /// Holds the Chunk's bytecode.
     pub bytecode: Vec<Instruction>,
