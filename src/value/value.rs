@@ -7,7 +7,6 @@ pub enum Value {
     Boolean(bool),
     Number(f64),
     Nil,
-    // TODO: string interning? may not be necessary
     String(Rc<String>),
     Function(Rc<Function>),
 }

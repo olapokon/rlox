@@ -1,6 +1,8 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
+use std::rc::Rc;
 
+use crate::value::function::Function;
 use crate::{binary_arithmetic_op, binary_boolean_op, compiler::*};
 use crate::{
     chunk::{Chunk, Instruction},
@@ -64,7 +66,8 @@ impl VM {
         self.stack_top = 0;
     }
 
-    fn run(&mut self, chunk: Chunk) -> VMResult {
+    fn run(&mut self, function: Rc<RefCell<Function>>) -> VMResult {
+        let chunk = &function.borrow().chunk;
         while self.ip < chunk.bytecode.len() {
             // conditional compilation for logging
             #[cfg(feature = "debug_trace_execution")]

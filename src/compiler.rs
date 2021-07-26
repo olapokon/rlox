@@ -1,11 +1,14 @@
 use core::f64;
-use std::{rc::Rc, usize};
+use std::{cell::RefCell, rc::Rc, usize};
 
 use crate::{
-    chunk::{Chunk, Instruction},
+    chunk::{Instruction},
     parser::Parser,
     scanner::{Scanner, Token, TokenType},
-    value::value::Value,
+    value::{
+        function::{Function, FunctionType},
+        value::Value,
+    },
 };
 
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
@@ -59,24 +62,40 @@ struct Local {
 }
 
 pub struct Compiler {
+    /// The [Function] currently being compiled.
+    function: Rc<RefCell<Function>>,
+    /// The type of the [Function] currently being compiled.
+    ///
+    /// [Function::Script] indicates the top-level function, which wraps all other functions.
+    function_type: FunctionType,
     // TODO: enclosing refactor?
     enclosing: Option<Rc<Compiler>>,
     /// All local variables that are in scope.
     /// They are in the order in which they are declared in the program,
     /// so the local variable's index in this vector is the same as its position in the stack,
     /// relative to the stack frame.
-    locals: Vec<Local>, // TODO: locals fixed length?
+    locals: Vec<Local>,
     /// The number of blocks surrounding the code that is currently being compiled.
     scope_depth: i32,
     //
-    current_chunk: Chunk,
     scanner: Scanner,
     parser: Parser,
 }
 
 impl Compiler {
-    pub fn compile(source: String) -> Result<Chunk, String> {
-        let mut compiler = Compiler::new(source.chars().collect());
+    pub fn compile(source: String) -> Result<Rc<RefCell<Function>>, String> {
+        let mut compiler = Compiler::new(source.chars().collect(), FunctionType::Script);
+        // TODO
+        // Reserve stack slot 0 for the Compiler's internal use, with placeholder values.
+        // compiler.locals.push(Local {
+        //     name: Token {
+        //         token_type: TokenType::And,
+        //         start: 0,
+        //         length: 0,
+        //         line: 0,
+        //     },
+        //     depth: 0,
+        // });
 
         compiler.advance();
         // compiler.expression();
@@ -84,22 +103,23 @@ impl Compiler {
             compiler.declaration();
         }
         // compiler.consume(TokenType::Eof, "Expect end of expression.");
-        compiler.end();
+        let compiled_function = compiler.end();
 
         if compiler.parser.had_error {
             Err(compiler.parser.error_message)
         } else {
-            Ok(compiler.current_chunk)
+            Ok(compiled_function)
         }
     }
 
-    fn new(source: Vec<char>) -> Compiler {
+    fn new(source: Vec<char>, function_type: FunctionType) -> Compiler {
         Compiler {
+            function: Rc::new(RefCell::new(Function::new())),
+            function_type,
             // TODO: enclosing refactor?
             enclosing: None,
             locals: Vec::new(),
             scope_depth: 0,
-            current_chunk: Chunk::new(),
             scanner: Scanner::init(source),
             parser: Parser::init(),
         }
@@ -175,7 +195,9 @@ impl Compiler {
     }
 
     fn emit_instruction(&mut self, instruction: Instruction) {
-        self.current_chunk
+        self.function
+            .borrow_mut()
+            .chunk
             .write(instruction, self.parser.previous.line);
     }
 
@@ -191,7 +213,7 @@ impl Compiler {
 
     // Adds a constant to the Chunk's constants array and returns the index.
     fn make_constant(&mut self, value: Value) -> usize {
-        let constant_index = self.current_chunk.add_constant(value);
+        let constant_index = self.function.borrow_mut().chunk.add_constant(value);
         if constant_index as u8 > u8::MAX {
             self.error("Too many constants in one chunk.");
             return 0;
@@ -199,14 +221,18 @@ impl Compiler {
         constant_index
     }
 
-    fn end(&mut self) {
+    fn end(&mut self) -> Rc<RefCell<Function>> {
         self.emit_instruction(Instruction::OpReturn);
+        let function = Rc::clone(&self.function);
+
         // conditional compilation for logging
         #[cfg(feature = "debug_print_code")]
         if !self.parser.had_error {
             self.print_current_chunk_constants();
-            self.current_chunk.disassemble("code");
+            self.function.borrow_mut().chunk.disassemble("code");
         }
+
+        return function;
     }
 
     // TODO: current compiler?
@@ -228,7 +254,9 @@ impl Compiler {
 
     fn print_current_chunk_constants(&self) {
         println!("chunk constants:");
-        self.current_chunk
+        self.function
+            .borrow_mut()
+            .chunk
             .constants
             .iter()
             .enumerate()
@@ -477,7 +505,7 @@ impl Compiler {
             self.expression_statement();
         }
 
-        let mut loop_start = self.current_chunk.bytecode.len();
+        let mut loop_start = self.function.borrow_mut().chunk.bytecode.len();
         let mut exit_jump = -1;
         // Middle/Test clause.
         if !self.match_token(TokenType::Semicolon) {
@@ -492,7 +520,7 @@ impl Compiler {
         // Right/Increment clause.
         if !self.match_token(TokenType::RightParen) {
             let body_jump = self.emit_jump(Instruction::OpJump(0xfff));
-            let increment_start = self.current_chunk.bytecode.len();
+            let increment_start = self.function.borrow_mut().chunk.bytecode.len();
             self.expression();
             self.emit_instruction(Instruction::OpPop);
             self.consume(TokenType::RightParen, "Expect ')' after for clauses.");
@@ -516,7 +544,7 @@ impl Compiler {
     }
 
     fn while_statement(&mut self) {
-        let loop_start = self.current_chunk.bytecode.len();
+        let loop_start = self.function.borrow_mut().chunk.bytecode.len();
         self.consume(TokenType::LeftParen, "Expect '(' after 'while'.");
         self.expression();
         self.consume(TokenType::RightParen, "Expect ')' after condition.");
@@ -534,26 +562,23 @@ impl Compiler {
     /// Returns the offset of the emitted instruction in the chunk.
     fn emit_jump(&mut self, instruction: Instruction) -> usize {
         self.emit_instruction(instruction);
-        self.current_chunk.bytecode.len() - 1
+        self.function.borrow_mut().chunk.bytecode.len() - 1
     }
 
     /// Put the correct number of instructions to jump over, if the if condition is false,
     /// now that the if block has been compiled.
     fn patch_jump(&mut self, offset: usize) {
-        let jump = self.current_chunk.bytecode.len() - offset - 1;
-        match self.current_chunk.bytecode[offset] {
-            Instruction::OpJump(_) => {
-                self.current_chunk.bytecode[offset] = Instruction::OpJump(jump);
-            }
-            Instruction::OpJumpIfFalse(_) => {
-                self.current_chunk.bytecode[offset] = Instruction::OpJumpIfFalse(jump);
-            }
-            _ => {}
-        }
+        let jump = self.function.borrow_mut().chunk.bytecode.len() - offset - 1;
+        let instruction = match self.function.borrow().chunk.bytecode[offset] {
+            Instruction::OpJump(_) => Some(Instruction::OpJump(jump)),
+            Instruction::OpJumpIfFalse(_) => Some(Instruction::OpJumpIfFalse(jump)),
+            _ => None,
+        };
+        self.function.borrow_mut().chunk.bytecode[offset] = instruction.unwrap();
     }
 
     fn emit_loop(&mut self, loop_start: usize) {
-        let offset = self.current_chunk.bytecode.len() - loop_start + 1;
+        let offset = self.function.borrow_mut().chunk.bytecode.len() - loop_start + 1;
         self.emit_instruction(Instruction::OpLoop(offset));
     }
 
