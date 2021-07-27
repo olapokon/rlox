@@ -1,29 +1,36 @@
-use std::cell::{Cell, RefCell};
+use std::borrow::{BorrowMut};
+use std::cell::{Cell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::value::function::Function;
 use crate::{binary_arithmetic_op, binary_boolean_op, compiler::*};
 use crate::{
     chunk::{Chunk, Instruction},
     value::value::Value,
 };
 
-const STACK_MAX: usize = 256;
+use super::call_frame::CallFrame;
+
+const FRAMES_MAX: usize = 64;
+const STACK_MAX: usize = 256 * FRAMES_MAX;
 
 /// A virtual machine that interprets chunks of bytecode.
 pub struct VM {
-    /// The instruction pointer.
-    /// It is the index of the instruction about to be executed, in the current [Chunk]'s code array.
-    ip: usize,
-    /// The VM's stack.
+    /// The VM's [CallFrame] stack.
+    // frames: Vec<Rc<RefCell<CallFrame>>>,
+    frames: Vec<CallFrame>,
+    /// The current number of [CallFrame].
+    // frame_count: usize,
+    /// The VM's value stack.
     stack: [Cell<Value>; STACK_MAX],
     /// The index pointing right after the last element of the stack.
     stack_top: usize,
     /// All global variables.
     globals: HashMap<String, Value>,
 
-    /// Only for testing. Holds the values printed by the print statement,
+    /// Only for testing.
+    ///
+    ///Holds the values printed by the print statement,
     /// so that they can be compared to the expected output in the tests.
     pub printed_values: Vec<Value>,
     /// Only for testing. Holds the latest error value
@@ -42,7 +49,8 @@ impl VM {
     pub fn new() -> VM {
         const V: Cell<Value> = Cell::new(Value::Nil);
         VM {
-            ip: 0,
+            frames: Vec::new(),
+            // frame_count: 0,
             stack: [V; STACK_MAX],
             stack_top: 0,
             globals: HashMap::new(),
@@ -59,16 +67,33 @@ impl VM {
                 return Err(VMError::CompileError);
             }
         };
-        self.run(r)
+
+        let function = Rc::new(r);
+
+        // Push the compiled function to the stack.
+        self.push_to_stack(Value::Function(Rc::clone(&function)));
+
+        let frame = CallFrame {
+            function,
+            ip: 0,
+            slots: 0,
+        };
+        self.frames.push(frame);
+        // self.frames.push(Rc::new(RefCell::new(frame)));
+
+        self.run()
     }
 
     pub fn reset_stack(&mut self) {
         self.stack_top = 0;
+        self.frames.clear();
     }
 
-    fn run(&mut self, function: Rc<RefCell<Function>>) -> VMResult {
-        let chunk = &function.borrow().chunk;
-        while self.ip < chunk.bytecode.len() {
+    fn run(&mut self) -> VMResult {
+        let mut frame = self.frames.pop().unwrap();
+        let chunk = &frame.function.chunk;
+
+        loop {
             // conditional compilation for logging
             #[cfg(feature = "debug_trace_execution")]
             if cfg!(feature = "debug_trace_execution") {
@@ -76,11 +101,12 @@ impl VM {
                     print!("[{:?}]", self.stack[i].get_mut());
                 }
                 println!();
-                chunk.disassemble_instruction(self.ip);
+                chunk.disassemble_instruction(frame.ip);
             }
             //
 
-            let instruction = self.read_instruction(&chunk);
+            let instruction = chunk.read_code(frame.ip);
+            frame.ip += 1;
             match instruction {
                 Instruction::OpNot => {
                     let b = is_falsey(&self.pop_from_stack());
@@ -90,27 +116,31 @@ impl VM {
                     if let Value::Number(val) = self.pop_from_stack() {
                         self.push_to_stack(Value::Number(-val))
                     } else {
-                        self.runtime_error(&chunk, "Operand must be a number.", None, None);
+                        self.runtime_error(
+                            &frame.function.borrow_mut().chunk,
+                            frame.ip - 1,
+                            "Operand must be a number.",
+                        );
                         return Err(VMError::RuntimeError);
                     }
+                }
+                Instruction::OpJump(offset) => {
+                    frame.ip += offset;
+                }
+                Instruction::OpJumpIfFalse(offset) => {
+                    let v: Value = self.pop_from_stack();
+                    if is_falsey(&v) {
+                        frame.ip += offset;
+                    }
+                    self.push_to_stack(v);
+                }
+                Instruction::OpLoop(offset) => {
+                    frame.ip -= offset;
                 }
                 Instruction::OpGetLocal(stack_index) => {
                     let v = self.stack[stack_index].take();
                     self.stack[stack_index] = Cell::new(v.clone());
                     self.push_to_stack(v);
-                }
-                Instruction::OpJump(offset) => {
-                    self.ip += offset;
-                }
-                Instruction::OpJumpIfFalse(offset) => {
-                    let v: Value = self.pop_from_stack();
-                    if is_falsey(&v) {
-                        self.ip += offset;
-                    }
-                    self.push_to_stack(v);
-                }
-                Instruction::OpLoop(offset) => {
-                    self.ip -= offset;
                 }
                 Instruction::OpSetLocal(stack_index) => {
                     let v = self.stack[self.stack_top - 1].take();
@@ -122,10 +152,9 @@ impl VM {
                         let v = self.globals.get(&name.to_string());
                         if v.is_none() {
                             self.runtime_error(
-                                &chunk,
+                                chunk,
+                                frame.ip - 1,
                                 &format!("Undefined variable '{}'.", &name),
-                                None,
-                                None,
                             );
                             return Err(VMError::RuntimeError);
                         }
@@ -142,10 +171,9 @@ impl VM {
                         if !self.globals.contains_key(&name.to_string()) {
                             self.globals.remove(&name.to_string());
                             self.runtime_error(
-                                &chunk,
+                                chunk,
+                                frame.ip - 1,
                                 &format!("Undefined variable '{}'.", &name),
-                                None,
-                                None,
                             );
                             return Err(VMError::RuntimeError);
                         }
@@ -167,8 +195,8 @@ impl VM {
                         self.globals.insert(String::clone(name), val);
                         //
                         // TODO: remove this print
-                        // println!("\nDEFINING NEW GLOBAL");
-                        // self.print_globals();
+                        println!("\nDEFINING NEW GLOBAL");
+                        self.print_globals();
                         //
                     } else {
                         return Err(VMError::RuntimeError);
@@ -220,7 +248,7 @@ impl VM {
                 Instruction::OpTrue => self.push_to_stack(Value::Boolean(true)),
                 Instruction::OpFalse => self.push_to_stack(Value::Boolean(false)),
                 Instruction::OpConstant(idx) => {
-                    let constant = chunk.read_constant(idx);
+                    let constant = chunk.read_constant(idx).clone();
                     self.push_to_stack(constant.clone());
                 }
                 Instruction::OpPop => {
@@ -241,9 +269,6 @@ impl VM {
                 }
             }
         }
-
-        // If there has been no return up to this point, it is an error.
-        return Err(VMError::RuntimeError);
     }
 
     fn push_to_stack(&mut self, value: Value) {
@@ -256,12 +281,6 @@ impl VM {
         self.stack[self.stack_top].take()
     }
 
-    fn read_instruction(&mut self, chunk: &Chunk) -> Instruction {
-        let instruction = chunk.read_code(self.ip);
-        self.ip += 1;
-        instruction
-    }
-
     // TODO: use peek in some cases instead of popping immediately?
     // cloning must be refactored in that case
     //
@@ -270,24 +289,12 @@ impl VM {
     // }
 
     // TODO: Make a RuntimeError struct and refactor this method?
-    fn runtime_error(
-        &mut self,
-        chunk: &Chunk,
-        message: &str,
-        arg1: Option<&str>,
-        arg2: Option<&str>,
-    ) {
+    fn runtime_error(&mut self, chunk: &Chunk, ip: usize, message: &str) {
         eprint!("{}", &message);
         self.latest_error_message = message.to_string();
-        if arg1.is_some() {
-            eprint!(" {}", arg1.unwrap());
-        }
-        if arg2.is_some() {
-            eprint!(" {}", arg2.unwrap());
-        }
         eprintln!();
 
-        let line = chunk.lines[self.ip - 1];
+        let line = chunk.lines[ip];
         eprintln!("[line {}] in script", line);
         self.reset_stack();
     }

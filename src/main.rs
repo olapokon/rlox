@@ -6,7 +6,7 @@ mod value;
 mod vm;
 
 use std::io::Write;
-use vm::*;
+use vm::{vm::*};
 
 fn main() {
     let args_count = std::env::args().count();
@@ -88,6 +88,8 @@ print (5 - (3 - 1)) + -1;
     }
 
     mod assignment {
+        use crate::vm::vm::{VM, VMResult};
+
         use super::*;
 
         #[test]
@@ -307,6 +309,8 @@ unknown = "what"; // expect runtime error: Undefined variable 'unknown'.
     }
 
     mod block {
+        use crate::vm::vm::VMResult;
+
         use super::*;
 
         #[ignore = "if"]

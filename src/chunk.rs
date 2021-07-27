@@ -105,10 +105,13 @@ impl Chunk {
             Instruction::OpConstant(idx)
             | Instruction::OpDefineGlobal(idx)
             | Instruction::OpGetGlobal(idx)
-            | Instruction::OpSetGlobal(idx)
-            | Instruction::OpGetLocal(idx)
-            | Instruction::OpSetLocal(idx) => {
+            | Instruction::OpSetGlobal(idx) => {
                 let constant = &self.constants[idx];
+                println!("{:?}    \tvalue: {:?}", instruction, constant);
+            }
+            Instruction::OpSetLocal(idx)
+            | Instruction::OpGetLocal(idx) => {
+                let constant = &self.constants[idx - 1];
                 println!("{:?}    \tvalue: {:?}", instruction, constant);
             }
             | Instruction::OpJumpIfFalse(val)
