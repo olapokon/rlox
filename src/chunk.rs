@@ -112,7 +112,7 @@ impl Chunk {
             // Locals have are 1 ahead, because of the 0 slot being reserved for the function.
             Instruction::OpSetLocal(idx)
             | Instruction::OpGetLocal(idx) => {
-                let constant = &self.constants[idx];
+                let constant = &self.constants[idx - 1];
                 println!("{:?}    \tvalue: {:?}", instruction, constant);
             }
             | Instruction::OpJumpIfFalse(val)
