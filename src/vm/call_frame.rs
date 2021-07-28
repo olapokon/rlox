@@ -11,8 +11,8 @@ pub struct CallFrame {
     /// Each [CallFrame] stores its instruction pointer, so that it knows where to resume execution,
     /// when another [CallFrame] that it has called ends.
     pub ip: usize,
-    /// The index of the first slot this function can use, in the VM's value stack.
-    pub slots: usize,
+    /// The index of the first slot this [CallFrame] can use, in the VM's value stack.
+    pub stack_index: usize,
 }
 
 impl CallFrame {
@@ -20,7 +20,7 @@ impl CallFrame {
         CallFrame {
             function: Rc::new(Function::new()),
             ip: 0,
-            slots: 0,
+            stack_index: 0,
         }
     }
 }

@@ -60,7 +60,7 @@ impl VM {
     }
 
     pub fn interpret(&mut self, source: String) -> VMResult {
-        let r = match Compiler::compile(source) {
+        let r = match CompilerManager::compile(source) {
             Ok(r) => r,
             Err(error_message) => {
                 self.latest_error_message = error_message;
@@ -76,10 +76,9 @@ impl VM {
         let frame = CallFrame {
             function,
             ip: 0,
-            slots: 0,
+            stack_index: 0,
         };
         self.frames.push(frame);
-        // self.frames.push(Rc::new(RefCell::new(frame)));
 
         self.run()
     }
@@ -98,7 +97,7 @@ impl VM {
             #[cfg(feature = "debug_trace_execution")]
             if cfg!(feature = "debug_trace_execution") {
                 for i in 0..self.stack_top {
-                    print!("[{:?}]", self.stack[i].get_mut());
+                    print!("[{}]", self.stack[i].get_mut());
                 }
                 println!();
                 chunk.disassemble_instruction(frame.ip);
@@ -137,15 +136,17 @@ impl VM {
                 Instruction::OpLoop(offset) => {
                     frame.ip -= offset;
                 }
-                Instruction::OpGetLocal(stack_index) => {
-                    let v = self.stack[stack_index].take();
-                    self.stack[stack_index] = Cell::new(v.clone());
+                Instruction::OpGetLocal(frame_index) => {
+                    let idx = frame.stack_index + frame_index;
+                    let v = self.stack[idx].take();
+                    self.stack[idx] = Cell::new(v.clone());
                     self.push_to_stack(v);
                 }
-                Instruction::OpSetLocal(stack_index) => {
+                Instruction::OpSetLocal(frame_index) => {
+                    let idx = frame.stack_index + frame_index;
                     let v = self.stack[self.stack_top - 1].take();
                     self.stack[self.stack_top - 1] = Cell::new(v.clone());
-                    self.stack[stack_index] = Cell::new(v);
+                    self.stack[idx] = Cell::new(v);
                 }
                 Instruction::OpGetGlobal(index) => {
                     if let Value::String(name) = chunk.read_constant(index) {
@@ -254,17 +255,14 @@ impl VM {
                 Instruction::OpPop => {
                     self.pop_from_stack();
                 }
-                // Instruction::OpPrint => print!("{}", self.pop_from_stack()),
                 Instruction::OpPrint => {
                     let v = self.pop_from_stack();
                     // TODO: conditional execution only for tests
                     self.printed_values.push(v.clone());
                     //
-                    print!("{}", v);
+                    println!("{}", v);
                 }
                 Instruction::OpReturn => {
-                    // let return_val = self.pop_from_stack();
-                    // println!("{:?}", return_val);
                     return Ok(());
                 }
             }

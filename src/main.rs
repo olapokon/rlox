@@ -90,8 +90,6 @@ print (5 - (3 - 1)) + -1;
     mod assignment {
         use crate::vm::vm::{VM, VMResult};
 
-        use super::*;
-
         #[test]
         fn associativity() -> VMResult {
             let source = r#"

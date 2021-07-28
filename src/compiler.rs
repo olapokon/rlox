@@ -61,6 +61,14 @@ struct Local {
     depth: i32,
 }
 
+/// Manages a collection of [Compiler]s.
+pub struct CompilerManager {
+    // current_compiler: Compiler,
+    compilers: Vec<Compiler>,
+    scanner: Scanner,
+    parser: Parser,
+}
+
 pub struct Compiler {
     /// The [Function] currently being compiled.
     function: Function,
@@ -68,8 +76,6 @@ pub struct Compiler {
     ///
     /// [Function::Script] indicates the top-level function, which wraps all other functions.
     function_type: FunctionType,
-    // TODO: enclosing refactor?
-    enclosing: Option<Rc<Compiler>>,
     /// All local variables that are in scope.
     /// They are in the order in which they are declared in the program,
     /// so the local variable's index in this vector is the same as its position in the stack,
@@ -77,14 +83,25 @@ pub struct Compiler {
     locals: Vec<Local>,
     /// The number of blocks surrounding the code that is currently being compiled.
     scope_depth: i32,
-    //
-    scanner: Scanner,
-    parser: Parser,
 }
 
 impl Compiler {
+    fn new(function_type: FunctionType) -> Compiler {
+        Compiler {
+            function: Function::new(),
+            function_type,
+            locals: Vec::new(),
+            scope_depth: 0,
+        }
+    }
+}
+
+impl CompilerManager {
     pub fn compile(source: String) -> Result<Function, String> {
-        let mut compiler = Compiler::new(source.chars().collect(), FunctionType::Script);
+        let source = source.chars().collect();
+
+        // The [Compiler] responsible for compiling the top-level script.
+        let mut compiler = Compiler::new(FunctionType::Script);
         // Reserve stack slot 0 for the Compiler's internal use, with placeholder values.
         compiler.locals.push(Local {
             name: Token {
@@ -96,32 +113,30 @@ impl Compiler {
             depth: 0,
         });
 
-        compiler.advance();
+        let mut compiler_manager = CompilerManager {
+            // current_compiler: compiler,
+            compilers: vec![compiler],
+            scanner: Scanner::init(source),
+            parser: Parser::init(),
+        };
+
+        compiler_manager.advance();
         // compiler.expression();
-        while !compiler.match_token(TokenType::Eof) {
-            compiler.declaration();
+        while !compiler_manager.match_token(TokenType::Eof) {
+            compiler_manager.declaration();
         }
         // compiler.consume(TokenType::Eof, "Expect end of expression.");
-        let compiled_function = compiler.end();
+        let compiled_function = compiler_manager.end();
 
-        if compiler.parser.had_error {
-            Err(compiler.parser.error_message)
+        if compiler_manager.parser.had_error {
+            Err(compiler_manager.parser.error_message.clone())
         } else {
             Ok(compiled_function)
         }
     }
 
-    fn new(source: Vec<char>, function_type: FunctionType) -> Compiler {
-        Compiler {
-            function: Function::new(),
-            function_type,
-            // TODO: enclosing refactor?
-            enclosing: None,
-            locals: Vec::new(),
-            scope_depth: 0,
-            scanner: Scanner::init(source),
-            parser: Parser::init(),
-        }
+    fn current_compiler(&mut self) -> &mut Compiler {
+        self.compilers.last_mut().unwrap()
     }
 
     /// Copies a token's lexeme from the source string.
@@ -194,9 +209,11 @@ impl Compiler {
     }
 
     fn emit_instruction(&mut self, instruction: Instruction) {
-        self.function
+        let line_num = self.parser.previous.line;
+        self.current_compiler()
+            .function
             .chunk
-            .write(instruction, self.parser.previous.line);
+            .write(instruction, line_num);
     }
 
     fn emit_instructions(&mut self, i_1: Instruction, i_2: Instruction) {
@@ -211,7 +228,7 @@ impl Compiler {
 
     // Adds a constant to the Chunk's constants array and returns the index.
     fn make_constant(&mut self, value: Value) -> usize {
-        let constant_index = self.function.chunk.add_constant(value);
+        let constant_index = self.current_compiler().function.chunk.add_constant(value);
         if constant_index as u8 > u8::MAX {
             self.error("Too many constants in one chunk.");
             return 0;
@@ -227,33 +244,36 @@ impl Compiler {
         #[cfg(feature = "debug_print_code")]
         if !self.parser.had_error {
             self.print_current_chunk_constants();
-            self.function.chunk.disassemble("code");
+            self.current_compiler().function.chunk.disassemble("code");
         }
 
         // TODO: refactor?
-        self.function.clone()
+        self.current_compiler().function.clone()
     }
 
     // TODO: current compiler?
     fn begin_scope(&mut self) {
-        self.scope_depth += 1;
+        self.current_compiler().scope_depth += 1;
     }
 
     fn end_scope(&mut self) {
-        self.scope_depth -= 1;
+        self.current_compiler().scope_depth -= 1;
 
         // pop all local variables for the scope that is ending
-        for i in (0..self.locals.len()).rev() {
-            if self.locals.get(i).unwrap().depth > self.scope_depth {
+        for i in (0..self.current_compiler().locals.len()).rev() {
+            if self.current_compiler().locals.get(i).unwrap().depth
+                > self.current_compiler().scope_depth
+            {
                 self.emit_instruction(Instruction::OpPop);
-                self.locals.pop();
+                self.current_compiler().locals.pop();
             }
         }
     }
 
-    fn print_current_chunk_constants(&self) {
+    fn print_current_chunk_constants(&mut self) {
         println!("chunk constants:");
-        self.function
+        self.current_compiler()
+            .function
             .chunk
             .constants
             .iter()
@@ -266,7 +286,7 @@ impl Compiler {
     // TODO: refactor Precedence?
     fn parse_precedence(&mut self, precedence: i32) {
         self.advance();
-        let prefix_rule = Compiler::rules(self.parser.previous.token_type);
+        let prefix_rule = CompilerManager::rules(self.parser.previous.token_type);
         if prefix_rule.prefix == ParseFn::None {
             self.error("Expect expression.");
             return;
@@ -275,9 +295,10 @@ impl Compiler {
         let can_assign: bool = precedence <= Precedence::Assignment as i32;
         self.parse_fn(prefix_rule.prefix, can_assign);
 
-        while precedence <= Compiler::rules(self.parser.current.token_type).precedence as i32 {
+        while precedence <= CompilerManager::rules(self.parser.current.token_type).precedence as i32
+        {
             self.advance();
-            let infix_rule = Compiler::rules(self.parser.previous.token_type);
+            let infix_rule = CompilerManager::rules(self.parser.previous.token_type);
             self.parse_fn(infix_rule.infix, can_assign);
         }
 
@@ -303,7 +324,9 @@ impl Compiler {
     }
 
     fn declaration(&mut self) {
-        if self.match_token(TokenType::Var) {
+        if self.match_token(TokenType::Fun) {
+            self.fun_declaration();
+        } else if self.match_token(TokenType::Var) {
             self.var_declaration();
         } else {
             self.statement();
@@ -333,12 +356,19 @@ impl Compiler {
         self.define_variable(global);
     }
 
+    fn fun_declaration(&mut self) {
+        let global = self.parse_variable("Expect function name.");
+        self.mark_initialized();
+        self.function(FunctionType::Function);
+        self.define_variable(global);
+    }
+
     fn parse_variable(&mut self, error_message: &str) -> usize {
         self.consume(TokenType::Identifier, error_message);
 
         self.declare_variable();
         // TODO: current scope depth
-        if self.scope_depth > 0 {
+        if self.current_compiler().scope_depth > 0 {
             return 0;
         }
         return self.identifier_constant(self.parser.previous);
@@ -351,7 +381,7 @@ impl Compiler {
     // Add variable to the scope.
     fn declare_variable(&mut self) {
         // TODO: current scope depth
-        if self.scope_depth == 0 {
+        if self.current_compiler().scope_depth == 0 {
             return;
         }
 
@@ -359,8 +389,10 @@ impl Compiler {
 
         let mut error = false;
         // error if trying to declare a local that is already declared in the same scope
-        for l in self.locals.iter().rev() {
-            if l.depth != -1 && l.depth < self.scope_depth {
+        let scope_depth = self.current_compiler().scope_depth;
+        for i in (0..self.current_compiler().locals.len()).rev() {
+            let l = self.current_compiler().locals[i];
+            if l.depth != -1 && l.depth < scope_depth {
                 break;
             }
 
@@ -380,7 +412,7 @@ impl Compiler {
     /// The variable becomes available for use.
     fn define_variable(&mut self, global: usize) {
         // TODO: current scope depth
-        if self.scope_depth > 0 {
+        if self.current_compiler().scope_depth > 0 {
             self.mark_initialized();
             return;
         }
@@ -391,17 +423,23 @@ impl Compiler {
     /// Change the depth of the [Local] from -1 to the correct depth,
     /// indicating that the declaration statement has ended and the variable can now be used.
     fn mark_initialized(&mut self) {
-        let i = self.locals.len() - 1;
-        self.locals[i].depth = self.scope_depth;
+        if self.current_compiler().scope_depth == 0 {
+            // If mark_initialized is called from scope_depth 0,
+            // it is a top-level function declaration.
+            // The function will be a global variable in this case, so there is no local to mark.
+            return;
+        }
+        let i = self.current_compiler().locals.len() - 1;
+        self.current_compiler().locals[i].depth = self.current_compiler().scope_depth;
     }
 
     fn add_local(&mut self, name: Token) {
-        if self.locals.len() as u8 == u8::MAX {
+        if self.current_compiler().locals.len() as u8 == u8::MAX {
             self.error("Too many local variables in function.");
             return;
         }
         // When declaring a local, set the depth to -1, indicating it has not been initialized.
-        self.locals.push(Local { name, depth: -1 });
+        self.current_compiler().locals.push(Local { name, depth: -1 });
     }
 
     fn identifiers_equal(&self, t_1: Token, t_2: Token) -> bool {
@@ -439,6 +477,26 @@ impl Compiler {
             }
             self.advance();
         }
+    }
+
+    fn add_new_compiler(&mut self, function_type: FunctionType) {
+        let compiler = Compiler::new(function_type);
+        self.compilers.push(compiler);
+    }
+
+    fn function(&mut self, function_type: FunctionType) {
+        self.add_new_compiler(function_type);
+        // TODO initialize the function compiler
+
+        self.begin_scope();
+
+        self.consume(TokenType::LeftParen, "Expect '(' after function name.");
+        self.consume(TokenType::RightParen, "Expect ')' after parameters.");
+        self.consume(TokenType::LeftBrace, "Expect ')' after parameters.");
+        self.block();
+
+        let function = self.end();
+        self.emit_constant(Value::Function(Rc::new(function)))
     }
 
     fn statement(&mut self) {
@@ -499,7 +557,7 @@ impl Compiler {
             self.expression_statement();
         }
 
-        let mut loop_start = self.function.chunk.bytecode.len();
+        let mut loop_start = self.current_compiler().function.chunk.bytecode.len();
         let mut exit_jump = -1;
         // Middle/Test clause.
         if !self.match_token(TokenType::Semicolon) {
@@ -514,7 +572,7 @@ impl Compiler {
         // Right/Increment clause.
         if !self.match_token(TokenType::RightParen) {
             let body_jump = self.emit_jump(Instruction::OpJump(0xfff));
-            let increment_start = self.function.chunk.bytecode.len();
+            let increment_start = self.current_compiler().function.chunk.bytecode.len();
             self.expression();
             self.emit_instruction(Instruction::OpPop);
             self.consume(TokenType::RightParen, "Expect ')' after for clauses.");
@@ -538,7 +596,7 @@ impl Compiler {
     }
 
     fn while_statement(&mut self) {
-        let loop_start = self.function.chunk.bytecode.len();
+        let loop_start = self.current_compiler().function.chunk.bytecode.len();
         self.consume(TokenType::LeftParen, "Expect '(' after 'while'.");
         self.expression();
         self.consume(TokenType::RightParen, "Expect ')' after condition.");
@@ -556,23 +614,23 @@ impl Compiler {
     /// Returns the offset of the emitted instruction in the chunk.
     fn emit_jump(&mut self, instruction: Instruction) -> usize {
         self.emit_instruction(instruction);
-        self.function.chunk.bytecode.len() - 1
+        self.current_compiler().function.chunk.bytecode.len() - 1
     }
 
     /// Put the correct number of instructions to jump over, if the if condition is false,
     /// now that the if block has been compiled.
     fn patch_jump(&mut self, offset: usize) {
-        let jump = self.function.chunk.bytecode.len() - offset - 1;
-        let instruction = match self.function.chunk.bytecode[offset] {
+        let jump = self.current_compiler().function.chunk.bytecode.len() - offset - 1;
+        let instruction = match self.current_compiler().function.chunk.bytecode[offset] {
             Instruction::OpJump(_) => Some(Instruction::OpJump(jump)),
             Instruction::OpJumpIfFalse(_) => Some(Instruction::OpJumpIfFalse(jump)),
             _ => None,
         };
-        self.function.chunk.bytecode[offset] = instruction.unwrap();
+        self.current_compiler().function.chunk.bytecode[offset] = instruction.unwrap();
     }
 
     fn emit_loop(&mut self, loop_start: usize) {
-        let offset = self.function.chunk.bytecode.len() - loop_start + 1;
+        let offset = self.current_compiler().function.chunk.bytecode.len() - loop_start + 1;
         self.emit_instruction(Instruction::OpLoop(offset));
     }
 
@@ -653,15 +711,25 @@ impl Compiler {
     fn resolve_local(&mut self, name: Token) -> i32 {
         // let mut err = false;
         let mut idx: i32 = -1;
-        for (i, l) in self.locals.iter().rev().enumerate() {
+        for i in (0..self.current_compiler().locals.len()).rev() {
+            let l = self.current_compiler().locals[i];
             if self.identifiers_equal(l.name, name) {
                 if l.depth == -1 {
                     self.error("Can't read local variable in its own initializer.");
                 }
-                idx = (self.locals.len() - 1 - i) as i32;
+                idx = (self.current_compiler().locals.len() - 1 - i) as i32;
                 break;
             }
         }
+        // for (i, l) in self.current_compiler().locals.iter().rev().enumerate() {
+        //     if self.identifiers_equal(l.name, name) {
+        //         if l.depth == -1 {
+        //             self.error("Can't read local variable in its own initializer.");
+        //         }
+        //         idx = (self.current_compiler().locals.len() - 1 - i) as i32;
+        //         break;
+        //     }
+        // }
         return idx;
     }
 
@@ -694,7 +762,7 @@ impl Compiler {
 
     fn binary(&mut self) {
         let operator_type = self.parser.previous.token_type;
-        let rule: ParseRule = Compiler::rules(operator_type);
+        let rule: ParseRule = CompilerManager::rules(operator_type);
         let precedence = rule.precedence as i32 + 1;
         self.parse_precedence(precedence);
 

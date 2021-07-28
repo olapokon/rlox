@@ -13,8 +13,12 @@ pub enum Instruction {
     OpFalse,
     /// The index of the variable name in the [Chunk]'s constants array.
     OpGetGlobal(usize),
-    /// The index of the variable in the [Compiler]'s locals array.
+    /// The index of the variable name in the [Chunk]'s constants array.
+    OpSetGlobal(usize),
+    /// The index of the variable in the [CallFrame]'s part of the stack.
     OpGetLocal(usize),
+    /// The index of the variable in the [CallFrame]'s part of the stack.
+    OpSetLocal(usize),
     OpGreater,
     /// The offset used to calculate the bytecode instruction to jump to.
     OpJump(usize),
@@ -24,10 +28,6 @@ pub enum Instruction {
     /// The offset used to calculate the bytecode instruction to jump to.
     OpLoop(usize),
     OpAdd,
-    /// The index of the variable name in the [Chunk]'s constants array.
-    OpSetGlobal(usize),
-    /// The index of the variable in the [Compiler]'s locals array.
-    OpSetLocal(usize),
     OpSubtract,
     OpMultiply,
     OpDivide,
@@ -109,9 +109,10 @@ impl Chunk {
                 let constant = &self.constants[idx];
                 println!("{:?}    \tvalue: {:?}", instruction, constant);
             }
+            // Locals have are 1 ahead, because of the 0 slot being reserved for the function.
             Instruction::OpSetLocal(idx)
             | Instruction::OpGetLocal(idx) => {
-                let constant = &self.constants[idx - 1];
+                let constant = &self.constants[idx];
                 println!("{:?}    \tvalue: {:?}", instruction, constant);
             }
             | Instruction::OpJumpIfFalse(val)
