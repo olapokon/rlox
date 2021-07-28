@@ -63,7 +63,6 @@ struct Local {
 
 /// Manages a collection of [Compiler]s.
 pub struct CompilerManager {
-    // current_compiler: Compiler,
     compilers: Vec<Compiler>,
     scanner: Scanner,
     parser: Parser,
@@ -100,28 +99,16 @@ impl CompilerManager {
     pub fn compile(source: String) -> Result<Function, String> {
         let source = source.chars().collect();
 
-        // The [Compiler] responsible for compiling the top-level script.
-        let mut compiler = Compiler::new(FunctionType::Script);
-        // Reserve stack slot 0 for the Compiler's internal use, with placeholder values.
-        compiler.locals.push(Local {
-            name: Token {
-                token_type: TokenType::And,
-                start: 0,
-                length: 0,
-                line: 0,
-            },
-            depth: 0,
-        });
-
         let mut compiler_manager = CompilerManager {
-            // current_compiler: compiler,
-            compilers: vec![compiler],
+            compilers: Vec::new(),
             scanner: Scanner::init(source),
             parser: Parser::init(),
         };
 
+        // Add the [Compiler] responsible for compiling the top-level script.
+        compiler_manager.add_new_compiler(FunctionType::Script);
+
         compiler_manager.advance();
-        // compiler.expression();
         while !compiler_manager.match_token(TokenType::Eof) {
             compiler_manager.declaration();
         }
@@ -480,7 +467,17 @@ impl CompilerManager {
     }
 
     fn add_new_compiler(&mut self, function_type: FunctionType) {
-        let compiler = Compiler::new(function_type);
+        let mut compiler = Compiler::new(function_type);
+        // Reserve stack slot 0 for the Compiler's internal use, with placeholder values.
+        compiler.locals.push(Local {
+            name: Token {
+                token_type: TokenType::Identifier,
+                start: 0,
+                length: 0,
+                line: 0,
+            },
+            depth: 0,
+        });
         self.compilers.push(compiler);
     }
 
@@ -710,27 +707,16 @@ impl CompilerManager {
     /// Returns the index of the local variable in the locals vector.
     fn resolve_local(&mut self, name: Token) -> i32 {
         // let mut err = false;
-        let mut idx: i32 = -1;
         for i in (0..self.current_compiler().locals.len()).rev() {
             let l = self.current_compiler().locals[i];
             if self.identifiers_equal(l.name, name) {
                 if l.depth == -1 {
                     self.error("Can't read local variable in its own initializer.");
                 }
-                idx = (self.current_compiler().locals.len() - 1 - i) as i32;
-                break;
+                return i as i32;
             }
         }
-        // for (i, l) in self.current_compiler().locals.iter().rev().enumerate() {
-        //     if self.identifiers_equal(l.name, name) {
-        //         if l.depth == -1 {
-        //             self.error("Can't read local variable in its own initializer.");
-        //         }
-        //         idx = (self.current_compiler().locals.len() - 1 - i) as i32;
-        //         break;
-        //     }
-        // }
-        return idx;
+        return -1;
     }
 
     fn grouping(&mut self) {
