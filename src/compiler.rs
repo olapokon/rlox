@@ -61,13 +61,6 @@ struct Local {
     depth: i32,
 }
 
-/// Manages a collection of [Compiler]s.
-pub struct CompilerManager {
-    compilers: Vec<Compiler>,
-    scanner: Scanner,
-    parser: Parser,
-}
-
 pub struct Compiler {
     /// The [Function] currently being compiled.
     function: Function,
@@ -95,24 +88,33 @@ impl Compiler {
     }
 }
 
+/// Manages a collection of [Compiler]s.
+pub struct CompilerManager {
+    /// The index of the [Compiler] currently in use, in the compilers array.
+    current: i32,
+    compilers: Vec<Compiler>,
+    scanner: Scanner,
+    parser: Parser,
+}
+
 impl CompilerManager {
     pub fn compile(source: String) -> Result<Function, String> {
         let source = source.chars().collect();
 
         let mut compiler_manager = CompilerManager {
+            current: -1,
             compilers: Vec::new(),
             scanner: Scanner::init(source),
             parser: Parser::init(),
         };
 
         // Add the [Compiler] responsible for compiling the top-level script.
-        compiler_manager.add_new_compiler(FunctionType::Script);
+        compiler_manager.init_compiler(FunctionType::Script);
 
         compiler_manager.advance();
         while !compiler_manager.match_token(TokenType::Eof) {
             compiler_manager.declaration();
         }
-        // compiler.consume(TokenType::Eof, "Expect end of expression.");
         let compiled_function = compiler_manager.end();
 
         if compiler_manager.parser.had_error {
@@ -123,7 +125,8 @@ impl CompilerManager {
     }
 
     fn current_compiler(&mut self) -> &mut Compiler {
-        self.compilers.last_mut().unwrap()
+        let compiler_idx = self.current as usize;
+        self.compilers.get_mut(compiler_idx).unwrap()
     }
 
     /// Copies a token's lexeme from the source string.
@@ -234,8 +237,10 @@ impl CompilerManager {
             self.current_compiler().function.chunk.disassemble("code");
         }
 
-        // TODO: refactor?
-        self.current_compiler().function.clone()
+        // TODO: refactor cloning?
+        let compiled_function = self.current_compiler().function.clone();
+        self.current -= 1;
+        compiled_function
     }
 
     // TODO: current compiler?
@@ -466,7 +471,7 @@ impl CompilerManager {
         }
     }
 
-    fn add_new_compiler(&mut self, function_type: FunctionType) {
+    fn init_compiler(&mut self, function_type: FunctionType) {
         let mut compiler = Compiler::new(function_type);
         // Reserve stack slot 0 for the Compiler's internal use, with placeholder values.
         compiler.locals.push(Local {
@@ -479,11 +484,11 @@ impl CompilerManager {
             depth: 0,
         });
         self.compilers.push(compiler);
+        self.current += 1;
     }
 
     fn function(&mut self, function_type: FunctionType) {
-        self.add_new_compiler(function_type);
-        // TODO initialize the function compiler
+        self.init_compiler(function_type);
 
         self.begin_scope();
 
