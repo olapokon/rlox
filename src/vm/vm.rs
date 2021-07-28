@@ -341,30 +341,26 @@ impl VM {
         self.latest_error_message = message.to_string();
         eprintln!();
 
-        let line = chunk.lines[ip];
-        eprintln!("[line {}] in script", line);
+        // let line = chunk.lines[ip];
+        // eprintln!("[line {}] in script", line);
 
-        // for i in (0..self.frames.len()).rev() {
-        //     let frame = &self.frames[i];
-        //     let function = &frame.function;
+        for i in (0..self.frames.len()).rev() {
+            let frame = &self.frames[i];
+            let function = &frame.function;
 
-        //     // TODO: fix index?
-        //     let instruction_idx = frame.ip - function.chunk.bytecode.len() - 1;
-        //     //
-        //     eprint!("[line {}] in ", function.chunk.lines[instruction_idx]);
-        //     // // TODO: fix index?
-        //     // let instruction_idx = ((frame.ip as i32) - function.chunk.bytecode.len() as i32 - 1) as i32;
-        //     // if instruction_idx < 0 {
-        //     //     break;
-        //     // }
-        //     // //
-        //     // eprint!("[line {}] in ", function.chunk.lines[instruction_idx as usize]);
-        //     if function.name.is_empty() {
-        //         eprintln!("script");
-        //     } else {
-        //         eprintln!("{}()", &function.name);
-        //     }
-        // }
+            // TODO: fix index?
+            // let instruction_idx = function.chunk.bytecode.len() - 1;
+            let instruction_idx = frame.ip;
+            eprint!(
+                "[line {}] in ",
+                function.chunk.lines[instruction_idx as usize]
+            );
+            if function.name.is_empty() {
+                eprintln!("script");
+            } else {
+                eprintln!("{}()", &function.name);
+            }
+        }
 
         self.reset_stack();
     }
