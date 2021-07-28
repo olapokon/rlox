@@ -1,4 +1,4 @@
-use std::{rc::Rc};
+use std::rc::Rc;
 
 use crate::value::function::Function;
 
@@ -21,6 +21,17 @@ impl CallFrame {
             function: Rc::new(Function::new()),
             ip: 0,
             stack_index: 0,
+        }
+    }
+}
+
+// TODO: is there a better choice? Is it the same as the default Clone implementation?
+impl Clone for CallFrame {
+    fn clone(&self) -> Self {
+        CallFrame {
+            function: Rc::clone(&self.function),
+            ip: self.ip,
+            stack_index: self.stack_index,
         }
     }
 }

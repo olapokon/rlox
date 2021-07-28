@@ -3,6 +3,8 @@ use crate::value::value::Value;
 /// The set of the VM's instruction codes.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Instruction {
+    /// The number of arguments with which the function is being called.
+    OpCall(usize),
     /// The index of the constant in the [Chunk]'s constants array.
     OpConstant(usize),
     OpNil,
@@ -108,6 +110,9 @@ impl Chunk {
             | Instruction::OpSetGlobal(idx) => {
                 let constant = &self.constants[idx];
                 println!("{:?}    \tvalue: {:?}", instruction, constant);
+            }
+            | Instruction::OpCall(arg_count) => {
+                println!("{:?}    \targ_count: {:?}", instruction, arg_count);
             }
             // Locals have are 1 ahead, because of the 0 slot being reserved for the function.
             Instruction::OpSetLocal(idx)

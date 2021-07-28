@@ -28,7 +28,7 @@ enum Precedence {
 
 #[derive(PartialEq)]
 enum ParseFn {
-    // Call,
+    Call,
     Grouping,
     // Dot,
     Unary,
@@ -228,7 +228,6 @@ impl CompilerManager {
 
     fn end(&mut self) -> Function {
         self.emit_instruction(Instruction::OpReturn);
-        // let function = self.function;
 
         // conditional compilation for logging
         #[cfg(feature = "debug_print_code")]
@@ -431,7 +430,9 @@ impl CompilerManager {
             return;
         }
         // When declaring a local, set the depth to -1, indicating it has not been initialized.
-        self.current_compiler().locals.push(Local { name, depth: -1 });
+        self.current_compiler()
+            .locals
+            .push(Local { name, depth: -1 });
     }
 
     fn identifiers_equal(&self, t_1: Token, t_2: Token) -> bool {
@@ -485,20 +486,10 @@ impl CompilerManager {
         });
         self.compilers.push(compiler);
         self.current += 1;
-    }
 
-    fn function(&mut self, function_type: FunctionType) {
-        self.init_compiler(function_type);
-
-        self.begin_scope();
-
-        self.consume(TokenType::LeftParen, "Expect '(' after function name.");
-        self.consume(TokenType::RightParen, "Expect ')' after parameters.");
-        self.consume(TokenType::LeftBrace, "Expect ')' after parameters.");
-        self.block();
-
-        let function = self.end();
-        self.emit_constant(Value::Function(Rc::new(function)))
+        if function_type != FunctionType::Script {
+            self.current_compiler().function.name = self.lexeme_to_string(self.parser.previous);
+        }
     }
 
     fn statement(&mut self) {
@@ -634,6 +625,62 @@ impl CompilerManager {
     fn emit_loop(&mut self, loop_start: usize) {
         let offset = self.current_compiler().function.chunk.bytecode.len() - loop_start + 1;
         self.emit_instruction(Instruction::OpLoop(offset));
+    }
+
+    fn function(&mut self, function_type: FunctionType) {
+        self.init_compiler(function_type);
+
+        self.begin_scope();
+
+        self.consume(TokenType::LeftParen, "Expect '(' after function name.");
+        if !self.check(TokenType::RightParen) {
+            loop {
+                self.current_compiler().function.arity += 1;
+                if self.current_compiler().function.arity > 255 {
+                    self.error_at(self.parser.current, "Can't have more than 255 parameters.");
+                }
+
+                let constant = self.parse_variable("Expect parameter name.");
+                self.define_variable(constant);
+
+                if !self.match_token(TokenType::Comma) {
+                    break;
+                }
+            }
+        }
+        self.consume(TokenType::RightParen, "Expect ')' after parameters.");
+        self.consume(TokenType::LeftBrace, "Expect ')' after parameters.");
+        self.block();
+
+        let function = self.end();
+        self.emit_constant(Value::Function(Rc::new(function)))
+    }
+
+    /// Compiles a function call.
+    fn call(&mut self) {
+        let arg_count = self.argument_list();
+        self.emit_instruction(Instruction::OpCall(arg_count));
+    }
+
+    fn argument_list(&mut self) -> usize {
+        let mut arg_count: usize = 0;
+
+        if !self.check(TokenType::RightParen) {
+            loop {
+                self.expression();
+                if arg_count == 255 {
+                    self.error("Can't have more than 255 arguments.");
+                }
+                arg_count += 1;
+
+                if !self.match_token(TokenType::Comma) {
+                    break;
+                }
+            }
+        }
+        self.consume(TokenType::LeftBrace, "Expect ')' after arguments.");
+
+        arg_count
     }
 
     fn and(&mut self) {
@@ -791,7 +838,7 @@ impl CompilerManager {
 
     fn parse_fn(&mut self, parse_fn: ParseFn, can_assign: bool) {
         match parse_fn {
-            // ParseFn::Call => ,
+            ParseFn::Call => self.call(),
             ParseFn::Grouping => self.grouping(),
             // ParseFn::Dot => ,
             ParseFn::Unary => self.unary(),
@@ -813,8 +860,8 @@ impl CompilerManager {
         return match token_type {
             TokenType::LeftParen => ParseRule {
                 prefix: ParseFn::Grouping,
-                infix: ParseFn::None,
-                precedence: Precedence::None,
+                infix: ParseFn::Call,
+                precedence: Precedence::Call,
             },
             TokenType::RightParen => ParseRule {
                 prefix: ParseFn::None,

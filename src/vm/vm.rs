@@ -1,8 +1,9 @@
-use std::borrow::{BorrowMut};
-use std::cell::{Cell};
+use std::borrow::BorrowMut;
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use crate::value::function::Function;
 use crate::{binary_arithmetic_op, binary_boolean_op, compiler::*};
 use crate::{
     chunk::{Chunk, Instruction},
@@ -50,7 +51,6 @@ impl VM {
         const V: Cell<Value> = Cell::new(Value::Nil);
         VM {
             frames: Vec::new(),
-            // frame_count: 0,
             stack: [V; STACK_MAX],
             stack_top: 0,
             globals: HashMap::new(),
@@ -69,16 +69,10 @@ impl VM {
         };
 
         let function = Rc::new(r);
-
         // Push the compiled function to the stack.
         self.push_to_stack(Value::Function(Rc::clone(&function)));
 
-        let frame = CallFrame {
-            function,
-            ip: 0,
-            stack_index: 0,
-        };
-        self.frames.push(frame);
+        self.call(function, 0);
 
         self.run()
     }
@@ -89,10 +83,12 @@ impl VM {
     }
 
     fn run(&mut self) -> VMResult {
-        let mut frame = self.frames.pop().unwrap();
-        let chunk = &frame.function.chunk;
+        // let mut frame = self.frames[self.frames.len() - 1].clone();
+        let mut frame = self.frames[self.frames.len() - 1].clone();
 
         loop {
+            let chunk = &frame.function.chunk;
+
             // conditional compilation for logging
             #[cfg(feature = "debug_trace_execution")]
             if cfg!(feature = "debug_trace_execution") {
@@ -107,6 +103,28 @@ impl VM {
             let instruction = chunk.read_code(frame.ip);
             frame.ip += 1;
             match instruction {
+                // TODO: refactor
+                Instruction::OpCall(arg_count) => {
+                    // TODO: make peek function
+                    let val = self.stack[self.stack_top - 1 - arg_count].get_mut();
+                    //
+
+                    // TODO: Put into separate function?
+                    let function: Rc<Function>;
+                    if let Value::Function(f) = val {
+                        function = Rc::clone(f);
+                    } else {
+                        self.runtime_error(
+                            &frame.function.borrow_mut().chunk,
+                            frame.ip - 1,
+                            "Can only call functions and classes.",
+                        );
+                        return Err(VMError::RuntimeError);
+                    }
+                    //
+                    self.call(function, arg_count);
+                    frame = self.frames[self.frames.len() - 1].clone();
+                }
                 Instruction::OpNot => {
                     let b = is_falsey(&self.pop_from_stack());
                     self.push_to_stack(Value::Boolean(b))
@@ -277,6 +295,18 @@ impl VM {
     fn pop_from_stack(&mut self) -> Value {
         self.stack_top -= 1;
         self.stack[self.stack_top].take()
+    }
+
+    // fn call_value(&mut self, callee: Value, arg_count: usize) {
+    // }
+
+    fn call(&mut self, function: Rc<Function>, arg_count: usize) {
+        let frame = CallFrame {
+            function: function,
+            ip: 0,
+            stack_index: self.stack_top - 1 - arg_count,
+        };
+        self.frames.push(frame);
     }
 
     // TODO: use peek in some cases instead of popping immediately?

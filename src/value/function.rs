@@ -1,5 +1,6 @@
 use crate::chunk::Chunk;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FunctionType {
     Function,
     Script,
