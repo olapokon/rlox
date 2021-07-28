@@ -10,7 +10,7 @@ pub enum FunctionType {
 #[derive(Debug, Clone)]
 pub struct Function {
     /// The function' number of parameters.
-    pub arity: i32,
+    pub arity: usize,
     /// The function's chunk of bytecode, to be interpreted by the [VM].
     pub chunk: Chunk,
     /// The function's name.

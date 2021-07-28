@@ -72,7 +72,7 @@ impl VM {
         // Push the compiled function to the stack.
         self.push_to_stack(Value::Function(Rc::clone(&function)));
 
-        self.call(function, 0);
+        self.call(function, 0)?;
 
         self.run()
     }
@@ -83,7 +83,6 @@ impl VM {
     }
 
     fn run(&mut self) -> VMResult {
-        // let mut frame = self.frames[self.frames.len() - 1].clone();
         let mut frame = self.frames[self.frames.len() - 1].clone();
 
         loop {
@@ -122,7 +121,7 @@ impl VM {
                         return Err(VMError::RuntimeError);
                     }
                     //
-                    self.call(function, arg_count);
+                    self.call(function, arg_count)?;
                     frame = self.frames[self.frames.len() - 1].clone();
                 }
                 Instruction::OpNot => {
@@ -300,13 +299,30 @@ impl VM {
     // fn call_value(&mut self, callee: Value, arg_count: usize) {
     // }
 
-    fn call(&mut self, function: Rc<Function>, arg_count: usize) {
+    fn call(&mut self, function: Rc<Function>, arg_count: usize) -> VMResult {
+        if arg_count != function.arity as usize {
+            let frame = self.frames[self.frames.len() - 1].clone();
+            self.runtime_error(
+                &frame.function.chunk,
+                frame.ip,
+                "Expected %d arguments but got %d.",
+            );
+            return Err(VMError::RuntimeError);
+        }
+
+        if self.frames.len() == FRAMES_MAX {
+            let frame = self.frames[self.frames.len() - 1].clone();
+            self.runtime_error(&frame.function.chunk, frame.ip, "Stack overflow.");
+            return Err(VMError::RuntimeError);
+        }
+
         let frame = CallFrame {
             function: function,
             ip: 0,
             stack_index: self.stack_top - 1 - arg_count,
         };
         self.frames.push(frame);
+        Ok(())
     }
 
     // TODO: use peek in some cases instead of popping immediately?
