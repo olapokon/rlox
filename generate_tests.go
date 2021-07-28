@@ -63,7 +63,7 @@ func writeTest(outputFile *os.File, fileInfo *fs.FileInfo, moduleName string, in
 	}
 	writeLine(outputFile, "\"#", 0)
 	writeLine(outputFile, ".to_string();", indentationLevel+1)
-	writeLine(outputFile, "let mut vm = VM::init();", indentationLevel+1)
+	writeLine(outputFile, "let mut vm = VM::new();", indentationLevel+1)
 
 	if len(assertValues) > 0 {
 		// This test expects certain values to be printed.
@@ -127,7 +127,7 @@ func writeToFile(files []fs.FileInfo) {
 
 		// If it is a directory, create a new test module for its tests.
 		// if name == "benchmark" || name == "regression" {
-		if name != "for" {
+		if name != "function" {
 			// Directories to exclude.
 			continue
 		}
