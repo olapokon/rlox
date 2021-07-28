@@ -109,18 +109,21 @@ impl Chunk {
             | Instruction::OpGetGlobal(idx)
             | Instruction::OpSetGlobal(idx) => {
                 let constant = &self.constants[idx];
-                println!("{:?}    \tvalue: {:?}", instruction, constant);
+                if let Value::Function(f) = constant {
+                    println!("{:?}    \tvalue: <fn {}>", instruction, f.name);
+                } else {
+                    println!("{:?}    \tvalue: {:?}", instruction, constant);
+                }
             }
-            | Instruction::OpCall(arg_count) => {
-                println!("{:?}    \targ_count: {:?}", instruction, arg_count);
+            Instruction::OpCall(_) => {
+                println!("{:?}", instruction);
             }
             // Locals have are 1 ahead, because of the 0 slot being reserved for the function.
-            Instruction::OpSetLocal(idx)
-            | Instruction::OpGetLocal(idx) => {
+            Instruction::OpSetLocal(idx) | Instruction::OpGetLocal(idx) => {
                 let constant = &self.constants[idx - 1];
                 println!("{:?}    \tvalue: {:?}", instruction, constant);
             }
-            | Instruction::OpJumpIfFalse(val)
+            Instruction::OpJumpIfFalse(val)
             | Instruction::OpJump(val)
             | Instruction::OpLoop(val) => {
                 println!("{:?}    \tvalue: {:?}", instruction, val);

@@ -97,7 +97,7 @@ impl Display for Value {
                 if name.is_empty() {
                     return write!(f, "{}", "<script>");
                 }
-                return write!(f, "{}", name);
+                return write!(f, "<fn {}>", name);
             },
         }
     }

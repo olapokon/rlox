@@ -231,13 +231,18 @@ impl CompilerManager {
 
         // conditional compilation for logging
         #[cfg(feature = "debug_print_code")]
+        let mut name = self.current_compiler().function.name.clone();
+        if name.is_empty() {
+            name = "<script>".to_string();
+        }
         if !self.parser.had_error {
             self.print_current_chunk_constants();
-            self.current_compiler().function.chunk.disassemble("code");
+            self.current_compiler().function.chunk.disassemble(&name);
         }
 
         // TODO: refactor cloning?
         let compiled_function = self.current_compiler().function.clone();
+        self.compilers.pop();
         self.current -= 1;
         compiled_function
     }
@@ -269,7 +274,7 @@ impl CompilerManager {
             .constants
             .iter()
             .enumerate()
-            .for_each(|(i, con)| println!("\t{}: {:?}", i, con));
+            .for_each(|(i, con)| println!("\t{}: {}", i, con));
         println!();
     }
 
@@ -649,7 +654,7 @@ impl CompilerManager {
             }
         }
         self.consume(TokenType::RightParen, "Expect ')' after parameters.");
-        self.consume(TokenType::LeftBrace, "Expect ')' after parameters.");
+        self.consume(TokenType::LeftBrace, "Expect '{' before function body.");
         self.block();
 
         let function = self.end();
@@ -678,7 +683,7 @@ impl CompilerManager {
                 }
             }
         }
-        self.consume(TokenType::LeftBrace, "Expect ')' after arguments.");
+        self.consume(TokenType::RightParen, "Expect ')' after arguments.");
 
         arg_count
     }

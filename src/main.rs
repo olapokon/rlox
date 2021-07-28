@@ -2597,4 +2597,38 @@ a255, a) {} // Error at 'a': Can't have more than 255 parameters.
             Ok(())
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// TEMPORARY
+    #[test]
+    fn temporary() -> VMResult {
+        let source = r#"
+fun a() { b(); }
+fun b() { c(); }
+fun c() {
+    c("too", "many");
+}
+a();
+"#
+        .to_string();
+        let mut vm = VM::new();
+        vm.interpret(source)?;
+        Ok(())
+    }
 }

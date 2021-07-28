@@ -213,8 +213,8 @@ impl VM {
                         self.globals.insert(String::clone(name), val);
                         //
                         // TODO: remove this print
-                        println!("\nDEFINING NEW GLOBAL");
-                        self.print_globals();
+                        // println!("\nDEFINING NEW GLOBAL");
+                        // self.print_globals();
                         //
                     } else {
                         return Err(VMError::RuntimeError);
@@ -305,7 +305,10 @@ impl VM {
             self.runtime_error(
                 &frame.function.chunk,
                 frame.ip,
-                "Expected %d arguments but got %d.",
+                &format!(
+                    "Expected {} arguments but got {}.",
+                    &function.arity, arg_count
+                ),
             );
             return Err(VMError::RuntimeError);
         }
@@ -340,12 +343,37 @@ impl VM {
 
         let line = chunk.lines[ip];
         eprintln!("[line {}] in script", line);
+
+        // for i in (0..self.frames.len()).rev() {
+        //     let frame = &self.frames[i];
+        //     let function = &frame.function;
+
+        //     // TODO: fix index?
+        //     let instruction_idx = frame.ip - function.chunk.bytecode.len() - 1;
+        //     //
+        //     eprint!("[line {}] in ", function.chunk.lines[instruction_idx]);
+        //     // // TODO: fix index?
+        //     // let instruction_idx = ((frame.ip as i32) - function.chunk.bytecode.len() as i32 - 1) as i32;
+        //     // if instruction_idx < 0 {
+        //     //     break;
+        //     // }
+        //     // //
+        //     // eprint!("[line {}] in ", function.chunk.lines[instruction_idx as usize]);
+        //     if function.name.is_empty() {
+        //         eprintln!("script");
+        //     } else {
+        //         eprintln!("{}()", &function.name);
+        //     }
+        // }
+
         self.reset_stack();
     }
 
     fn print_globals(&self) {
         println!("VM globals:");
-        self.globals.iter().for_each(|con| println!("\t{:?}", con));
+        self.globals.iter().for_each(|(global_name, global_value)| {
+            println!("\t{}: {}", global_name, global_value)
+        });
         println!();
     }
 }
