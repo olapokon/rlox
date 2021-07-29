@@ -227,7 +227,7 @@ impl CompilerManager {
     }
 
     fn end(&mut self) -> Function {
-        self.emit_instruction(Instruction::OpReturn);
+        self.emit_return();
 
         // conditional compilation for logging
         #[cfg(feature = "debug_print_code")]
@@ -264,6 +264,11 @@ impl CompilerManager {
                 self.current_compiler().locals.pop();
             }
         }
+    }
+
+    fn emit_return(&mut self) {
+        self.emit_instruction(Instruction::OpNil);
+        self.emit_instruction(Instruction::OpReturn);
     }
 
     fn print_current_chunk_constants(&mut self) {
@@ -504,6 +509,8 @@ impl CompilerManager {
             self.for_statement();
         } else if self.match_token(TokenType::If) {
             self.if_statement();
+        } else if self.match_token(TokenType::Return) {
+            self.return_statement();
         } else if self.match_token(TokenType::While) {
             self.while_statement();
         } else if self.match_token(TokenType::LeftBrace) {
@@ -512,6 +519,20 @@ impl CompilerManager {
             self.end_scope();
         } else {
             self.expression_statement();
+        }
+    }
+
+    fn return_statement(&mut self) {
+        if self.current_compiler().function_type == FunctionType::Script {
+            self.error("Can't return from top-level code.");
+        }
+
+        if self.match_token(TokenType::Semicolon) {
+            self.emit_return();
+        } else {
+            self.expression();
+            self.consume(TokenType::Semicolon, "Expect ';' after return value.");
+            self.emit_instruction(Instruction::OpReturn);
         }
     }
 

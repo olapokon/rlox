@@ -72,7 +72,7 @@ impl VM {
         // Push the compiled function to the stack.
         self.push_to_stack(Value::Function(Rc::clone(&function)));
 
-        self.call(function, 0)?;
+        self.call(function, 0, 0)?;
 
         self.run()
     }
@@ -117,7 +117,7 @@ impl VM {
                         return Err(VMError::RuntimeError);
                     }
                     //
-                    self.call(function, arg_count)?;
+                    self.call(function, arg_count, frame.ip)?;
                     frame = self.frames[self.frames.len() - 1].clone();
                 }
                 Instruction::OpNot => {
@@ -264,7 +264,16 @@ impl VM {
                     println!("{}", v);
                 }
                 Instruction::OpReturn => {
-                    return Ok(());
+                    let return_val = self.pop_from_stack();
+                    self.frames.pop();
+                    if self.frames.is_empty() {
+                        self.pop_from_stack();
+                        return Ok(());
+                    }
+
+                    self.stack_top = frame.stack_index;
+                    self.push_to_stack(return_val);
+                    frame = self.frames[self.frames.len() - 1].clone();
                 }
             }
         }
@@ -283,9 +292,8 @@ impl VM {
     // fn call_value(&mut self, callee: Value, arg_count: usize) {
     // }
 
-    fn call(&mut self, function: Rc<Function>, arg_count: usize) -> VMResult {
+    fn call(&mut self, function: Rc<Function>, arg_count: usize, current_frame_ip: usize) -> VMResult {
         if arg_count != function.arity as usize {
-            let frame = self.frames[self.frames.len() - 1].clone();
             self.runtime_error(&format!(
                 "Expected {} arguments but got {}.",
                 &function.arity, arg_count
@@ -294,9 +302,13 @@ impl VM {
         }
 
         if self.frames.len() == FRAMES_MAX {
-            let frame = self.frames[self.frames.len() - 1].clone();
             self.runtime_error("Stack overflow.");
             return Err(VMError::RuntimeError);
+        }
+        // Save the frame ip in the frame in the VM::frames array.
+        // The clone being used only has a copy of the ip, as the ip is not heap allocated.
+        if !self.frames.is_empty() {
+            self.frames.last_mut().unwrap().ip = current_frame_ip;
         }
 
         let frame = CallFrame {
@@ -304,6 +316,7 @@ impl VM {
             ip: 0,
             stack_index: self.stack_top - 1 - arg_count,
         };
+        //
         self.frames.push(frame);
         Ok(())
     }
