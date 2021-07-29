@@ -231,13 +231,15 @@ impl CompilerManager {
 
         // conditional compilation for logging
         #[cfg(feature = "debug_print_code")]
-        let mut name = self.current_compiler().function.name.clone();
-        if name.is_empty() {
-            name = "<script>".to_string();
-        }
-        if !self.parser.had_error {
-            self.print_current_chunk_constants();
-            self.current_compiler().function.chunk.disassemble(&name);
+        {
+            let mut name = self.current_compiler().function.name.clone();
+            if name.is_empty() {
+                name = "<script>".to_string();
+            }
+            if !self.parser.had_error {
+                self.print_current_chunk_constants();
+                self.current_compiler().function.chunk.disassemble(&name);
+            }
         }
 
         // TODO: refactor cloning?

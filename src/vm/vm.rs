@@ -104,7 +104,6 @@ impl VM {
             let instruction = chunk.read_code(frame.ip);
             frame.ip += 1;
             match instruction {
-                // TODO: refactor
                 Instruction::OpCall(arg_count) => {
                     // TODO: make peek function
                     let val = self.stack[self.stack_top - 1 - arg_count].get_mut();
@@ -131,6 +130,8 @@ impl VM {
                     if function.is_some() {
                         self.call(function.unwrap(), arg_count, frame.ip)?;
                     }
+                    //
+
                     frame = self.frames[self.frames.len() - 1].clone();
                 }
                 Instruction::OpNot => {
@@ -380,9 +381,10 @@ impl VM {
         let native = NativeFunction {
             arity: 0,
             name: name.to_string(),
-            function
+            function,
         };
-        self.globals.insert(name.to_string(), Value::NativeFunction(Rc::new(native)));
+        self.globals
+            .insert(name.to_string(), Value::NativeFunction(Rc::new(native)));
     }
 
     fn print_globals(&self) {

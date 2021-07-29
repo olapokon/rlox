@@ -1875,6 +1875,25 @@ isEven(4);
         }
 
         #[test]
+        fn recursion_test_temporary() -> VMResult {
+            let source = r#"
+fun fib(n) {
+        if (n < 2) return n;
+        return fib(n - 2) + fib(n - 1);
+    }
+    
+var start = clock();
+print fib(4);
+print clock() - start;
+"#
+            .to_string();
+            let mut vm = VM::new();
+            vm.interpret(source)?;
+            assert_eq!("21", vm.printed_values.pop().unwrap().to_string());
+            Ok(())
+        }
+
+        #[test]
         fn missing_arguments_test() -> VMResult {
             let source = r#"
 fun f(a, b) {}
