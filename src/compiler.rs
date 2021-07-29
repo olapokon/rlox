@@ -435,7 +435,7 @@ impl CompilerManager {
     }
 
     fn add_local(&mut self, name: Token) {
-        if self.current_compiler().locals.len() as u8 == u8::MAX {
+        if self.current_compiler().locals.len() as u16 == u16::MAX {
             self.error("Too many local variables in function.");
             return;
         }

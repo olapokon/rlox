@@ -1,6 +1,6 @@
 use std::{fmt::Display, rc::Rc};
 
-use super::function::Function;
+use super::{function::Function, native_function::NativeFunction};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -9,6 +9,7 @@ pub enum Value {
     Nil,
     String(Rc<String>),
     Function(Rc<Function>),
+    NativeFunction(Rc<NativeFunction>),
 }
 
 #[macro_export]
@@ -98,7 +99,8 @@ impl Display for Value {
                     return write!(f, "{}", "<script>");
                 }
                 return write!(f, "<fn {}>", name);
-            },
+            }
+            Value::NativeFunction(_) => write!(f, "<native fn>"),
         }
     }
 }

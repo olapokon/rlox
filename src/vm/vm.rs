@@ -1,14 +1,12 @@
-use std::borrow::BorrowMut;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::time::{Instant, SystemTime};
 
 use crate::value::function::Function;
+use crate::value::native_function::NativeFunction;
 use crate::{binary_arithmetic_op, binary_boolean_op, compiler::*};
-use crate::{
-    chunk::{Chunk, Instruction},
-    value::value::Value,
-};
+use crate::{chunk::Instruction, value::value::Value};
 
 use super::call_frame::CallFrame;
 
@@ -49,14 +47,18 @@ pub enum VMError {
 impl VM {
     pub fn new() -> VM {
         const V: Cell<Value> = Cell::new(Value::Nil);
-        VM {
+        let mut vm = VM {
             frames: Vec::new(),
             stack: [V; STACK_MAX],
             stack_top: 0,
             globals: HashMap::new(),
             printed_values: Vec::new(),
             latest_error_message: String::new(),
-        }
+        };
+
+        vm.define_native("clock", clock_native);
+
+        vm
     }
 
     pub fn interpret(&mut self, source: String) -> VMResult {
@@ -109,15 +111,26 @@ impl VM {
                     //
 
                     // TODO: Put into separate function?
-                    let function: Rc<Function>;
-                    if let Value::Function(f) = val {
-                        function = Rc::clone(f);
-                    } else {
-                        self.runtime_error("Can only call functions and classes.");
-                        return Err(VMError::RuntimeError);
+                    let mut function: Option<Rc<Function>> = None;
+                    match val {
+                        Value::Function(f) => {
+                            function = Some(Rc::clone(f));
+                        }
+                        Value::NativeFunction(f) => {
+                            let f = &f.function;
+                            let result = f();
+                            self.stack_top -= arg_count + 1;
+                            self.push_to_stack(result);
+                            continue;
+                        }
+                        _ => {
+                            self.runtime_error("Can only call functions and classes.");
+                            return Err(VMError::RuntimeError);
+                        }
                     }
-                    //
-                    self.call(function, arg_count, frame.ip)?;
+                    if function.is_some() {
+                        self.call(function.unwrap(), arg_count, frame.ip)?;
+                    }
                     frame = self.frames[self.frames.len() - 1].clone();
                 }
                 Instruction::OpNot => {
@@ -292,7 +305,12 @@ impl VM {
     // fn call_value(&mut self, callee: Value, arg_count: usize) {
     // }
 
-    fn call(&mut self, function: Rc<Function>, arg_count: usize, current_frame_ip: usize) -> VMResult {
+    fn call(
+        &mut self,
+        function: Rc<Function>,
+        arg_count: usize,
+        current_frame_ip: usize,
+    ) -> VMResult {
         if arg_count != function.arity as usize {
             self.runtime_error(&format!(
                 "Expected {} arguments but got {}.",
@@ -358,6 +376,15 @@ impl VM {
         self.reset_stack();
     }
 
+    fn define_native(&mut self, name: &str, function: fn() -> Value) {
+        let native = NativeFunction {
+            arity: 0,
+            name: name.to_string(),
+            function
+        };
+        self.globals.insert(name.to_string(), Value::NativeFunction(Rc::new(native)));
+    }
+
     fn print_globals(&self) {
         println!("VM globals:");
         self.globals.iter().for_each(|(global_name, global_value)| {
@@ -374,4 +401,12 @@ fn is_falsey(v: &Value) -> bool {
         Value::Boolean(b) => !b,
         _ => false,
     }
+}
+
+fn clock_native() -> Value {
+    let time = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("Native function error.")
+        .as_secs_f64();
+    Value::Number(time as f64)
 }

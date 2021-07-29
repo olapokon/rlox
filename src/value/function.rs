@@ -25,8 +25,4 @@ impl Function {
             chunk: Chunk::new(),
         }
     }
-
-    pub fn chunk_mut(&mut self) -> &mut Chunk {
-        &mut self.chunk
-    }
 }
