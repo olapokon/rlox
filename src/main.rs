@@ -266,7 +266,6 @@ unknown = "what"; // expect runtime error: Undefined variable 'unknown'.
 
         use super::*;
 
-        #[ignore = "if"]
         #[test]
         fn empty() -> VMResult {
             let source = r#"
@@ -601,7 +600,6 @@ print a;
     mod variable {
         use super::*;
 
-        #[ignore = "function"]
         #[test]
         fn collide_with_parameter() -> VMResult {
             let source = r#"
@@ -643,7 +641,6 @@ fun foo(a) {
             Ok(())
         }
 
-        #[ignore = "function"]
         #[test]
         fn duplicate_parameter() -> VMResult {
             let source = r#"
@@ -665,7 +662,6 @@ fun foo(arg,
             Ok(())
         }
 
-        #[ignore = "function"]
         #[test]
         fn early_bound() -> VMResult {
             let source = r#"
@@ -902,7 +898,6 @@ print a; // expect: nil
             Ok(())
         }
 
-        #[ignore = "if"]
         #[test]
         fn unreached_undefined() -> VMResult {
             let source = r#"
@@ -1374,7 +1369,6 @@ f3(); // expect: 3
             Ok(())
         }
 
-        #[ignore = "function"]
         #[test]
         fn fun_in_body_test() -> VMResult {
             let source = r#"
@@ -1413,7 +1407,6 @@ h(); // expect: i
             Ok(())
         }
 
-        #[ignore = "function"]
         #[test]
         fn return_inside_test() -> VMResult {
             let source = r#"
@@ -1547,7 +1540,6 @@ f3(); // expect: 4
             Ok(())
         }
 
-        #[ignore = "function"]
         #[test]
         fn fun_in_body_test() -> VMResult {
             let source = r#"
@@ -1586,7 +1578,6 @@ h(); // expect: i
             Ok(())
         }
 
-        #[ignore = "function"]
         #[test]
         fn return_inside_test() -> VMResult {
             let source = r#"
@@ -1695,7 +1686,6 @@ for ({}; a < 2; a = a + 1) {}
             Ok(())
         }
 
-        #[ignore = "function"]
         #[test]
         fn syntax_test() -> VMResult {
             let source = r#"
@@ -2596,39 +2586,5 @@ a255, a) {} // Error at 'a': Can't have more than 255 parameters.
             );
             Ok(())
         }
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// TEMPORARY
-    #[test]
-    fn temporary() -> VMResult {
-        let source = r#"
-fun a() { b(); }
-fun b() { c(); }
-fun c() {
-    c("too", "many");
-}
-a();
-"#
-        .to_string();
-        let mut vm = VM::new();
-        vm.interpret(source)?;
-        Ok(())
     }
 }
