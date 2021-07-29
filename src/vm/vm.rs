@@ -113,11 +113,7 @@ impl VM {
                     if let Value::Function(f) = val {
                         function = Rc::clone(f);
                     } else {
-                        self.runtime_error(
-                            &frame.function.borrow_mut().chunk,
-                            frame.ip - 1,
-                            "Can only call functions and classes.",
-                        );
+                        self.runtime_error("Can only call functions and classes.");
                         return Err(VMError::RuntimeError);
                     }
                     //
@@ -132,11 +128,7 @@ impl VM {
                     if let Value::Number(val) = self.pop_from_stack() {
                         self.push_to_stack(Value::Number(-val))
                     } else {
-                        self.runtime_error(
-                            &frame.function.borrow_mut().chunk,
-                            frame.ip - 1,
-                            "Operand must be a number.",
-                        );
+                        self.runtime_error("Operand must be a number.");
                         return Err(VMError::RuntimeError);
                     }
                 }
@@ -169,11 +161,7 @@ impl VM {
                     if let Value::String(name) = chunk.read_constant(index) {
                         let v = self.globals.get(&name.to_string());
                         if v.is_none() {
-                            self.runtime_error(
-                                chunk,
-                                frame.ip - 1,
-                                &format!("Undefined variable '{}'.", &name),
-                            );
+                            self.runtime_error(&format!("Undefined variable '{}'.", &name));
                             return Err(VMError::RuntimeError);
                         }
                         let v = v.unwrap().clone();
@@ -188,11 +176,7 @@ impl VM {
                         // in case of error, delete it from the table (only relevant for the REPL)
                         if !self.globals.contains_key(&name.to_string()) {
                             self.globals.remove(&name.to_string());
-                            self.runtime_error(
-                                chunk,
-                                frame.ip - 1,
-                                &format!("Undefined variable '{}'.", &name),
-                            );
+                            self.runtime_error(&format!("Undefined variable '{}'.", &name));
                             return Err(VMError::RuntimeError);
                         }
 
@@ -302,20 +286,16 @@ impl VM {
     fn call(&mut self, function: Rc<Function>, arg_count: usize) -> VMResult {
         if arg_count != function.arity as usize {
             let frame = self.frames[self.frames.len() - 1].clone();
-            self.runtime_error(
-                &frame.function.chunk,
-                frame.ip,
-                &format!(
-                    "Expected {} arguments but got {}.",
-                    &function.arity, arg_count
-                ),
-            );
+            self.runtime_error(&format!(
+                "Expected {} arguments but got {}.",
+                &function.arity, arg_count
+            ));
             return Err(VMError::RuntimeError);
         }
 
         if self.frames.len() == FRAMES_MAX {
             let frame = self.frames[self.frames.len() - 1].clone();
-            self.runtime_error(&frame.function.chunk, frame.ip, "Stack overflow.");
+            self.runtime_error("Stack overflow.");
             return Err(VMError::RuntimeError);
         }
 
@@ -336,7 +316,7 @@ impl VM {
     // }
 
     // TODO: Make a RuntimeError struct and refactor this method?
-    fn runtime_error(&mut self, chunk: &Chunk, ip: usize, message: &str) {
+    fn runtime_error(&mut self, message: &str) {
         eprint!("{}", &message);
         self.latest_error_message = message.to_string();
         eprintln!();
